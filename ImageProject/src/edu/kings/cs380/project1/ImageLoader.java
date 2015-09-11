@@ -1,5 +1,6 @@
 package edu.kings.cs380.project1;
 
+import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -23,7 +24,8 @@ public class ImageLoader {
 		BufferedImage ri = ImageIO.read(theFile);
 		BufferedImage theImage = new BufferedImage(ri.getWidth(), ri.getHeight(), 
 				BufferedImage.TYPE_INT_ARGB);
-		// TODO
+		Graphics g = theImage.getGraphics();
+		g.drawImage(ri, 0, 0, null);
 		return theImage;
 	}
 	

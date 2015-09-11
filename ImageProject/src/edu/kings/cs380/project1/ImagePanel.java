@@ -58,6 +58,5 @@ public class ImagePanel extends JPanel {
 	 */
 	public void setImage(BufferedImage image) {
 		this.image = image;
-		
 	}
 }

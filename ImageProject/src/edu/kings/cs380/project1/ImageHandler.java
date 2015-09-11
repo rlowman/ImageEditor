@@ -27,7 +27,9 @@ public class ImageHandler {
 				int red = c. getRed();
 				int green = c.getGreen();
 				int blue = c. getBlue();
-				Color newColor = new Color((int) ((0.299 * red) + (0.587 * green) + (0.114*blue)));
+				int alpha = c.getAlpha();
+				int gray = (int) (0.299 * red + 0.587 * green + 0.114*blue);
+				Color newColor = new Color(gray, gray, gray, alpha);
 				returnImage.setRGB(column, row, newColor.getRGB());
 			}
 		}
