@@ -75,7 +75,7 @@ public class Window implements ActionListener {
 		
 		mainFrame = new JFrame("Monarch Image Editing Studio");
 		mainFrame.setSize(700, 500);
-		mainFrame.setVisible(true);
+		
 		GridLayout mainLayout = new GridLayout(1,2);
 		mainFrame.setLayout(mainLayout);
 		
@@ -84,12 +84,16 @@ public class Window implements ActionListener {
 		buttonPanel.setLayout(buttonLayout);
 		drawingPanel = new JPanel();
 		drawingPanel.setLayout(buttonLayout);
+		timeLabel = new JLabel("Time label");
 		
 		enter = new JButton("Enter");
-		timeLabel = new JLabel("Time label");
+		enter.addActionListener(this);
 		saveButton = new JButton("Save Image");
+		saveButton.addActionListener(this);
 		closeFileButton = new JButton("Close File");
+		closeFileButton.addActionListener(this);
 		grayscaleButton = new JButton("Grayscale");
+		grayscaleButton.addActionListener(this);
 		fileName = new JTextArea();
 		loader = new ImageLoader();
 		handler = new ImageHandler();
@@ -104,6 +108,7 @@ public class Window implements ActionListener {
 		
 		noImageLabel = new JLabel("No Image Selected");
 		drawingPanel.add(BorderLayout.CENTER, noImageLabel);
+		mainFrame.setVisible(true);
 	}
 
 	/**
