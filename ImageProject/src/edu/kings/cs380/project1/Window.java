@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -43,7 +44,7 @@ public class Window implements ActionListener {
 	private JPanel buttonPanel;
 	
 	/**Panel that handles drawing the image to the screen*/
-	private JPanel drawingPanel;
+	private ImagePanel drawingPanel;
 	
 	/**Button that makes a picture grayscale*/
 	private JButton grayscaleButton;
@@ -82,7 +83,7 @@ public class Window implements ActionListener {
 		GridLayout buttonLayout = new GridLayout(6,1);
 		buttonPanel = new JPanel();
 		buttonPanel.setLayout(buttonLayout);
-		drawingPanel = new JPanel();
+		drawingPanel = new ImagePanel(null);
 		drawingPanel.setLayout(buttonLayout);
 		timeLabel = new JLabel("Time label");
 		
@@ -117,18 +118,17 @@ public class Window implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent ae) {
 		if(ae.getSource() == enter) {
-			String result = fileName.getText();
-			if(!result.equals("")) {
+			JFileChooser chooser = new JFileChooser();
+			if( chooser.showOpenDialog(mainFrame) == JFileChooser.APPROVE_OPTION ) {
+				File result = chooser.getSelectedFile();
 				try {
-					currentFile = new File(result);
-					currentImage = loader.loadFile(currentFile);
+					currentImage = loader.loadFile(result);
 					drawImage(currentImage);
 				} catch (IOException e) {
 					JOptionPane.showMessageDialog(mainFrame, "File Not Found", "Error", JOptionPane.ERROR_MESSAGE);
+					System.err.println(e.getMessage());
+					e.printStackTrace();
 				}
-			}
-			else {
-				 JOptionPane.showMessageDialog(mainFrame, "No File Information Entered", "Error", JOptionPane.ERROR_MESSAGE);
 			}
 		}
 		else if(ae.getSource() == grayscaleButton) {
@@ -148,7 +148,8 @@ public class Window implements ActionListener {
 				loader.saveFile(currentImage, currentFile);
 			} catch (IOException e) {
 				JOptionPane.showMessageDialog(mainFrame, "File could not be saved", "Error", JOptionPane.ERROR_MESSAGE);
-			} 
+		
+			}
 		}
 	}
 	
@@ -159,6 +160,6 @@ public class Window implements ActionListener {
 	 */
 	private void drawImage(BufferedImage drawImage) {
 		Graphics g = drawImage.getGraphics();
-		g.drawImage(drawImage, 0, 0, drawingPanel);
+		
 	}
 }

@@ -14,16 +14,4 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
-	<linkedResources>
-		<link>
-			<name>pnggradHDrgba.png</name>
-			<type>1</type>
-			<location>C:/Users/Robert/Pictures/pnggradHDrgba.png</location>
-		</link>
-		<link>
-			<name>test.png</name>
-			<type>1</type>
-			<location>C:/Users/Robert/Pictures/pnggradHDrgba.png</location>
-		</link>
-	</linkedResources>
 </projectDescription>

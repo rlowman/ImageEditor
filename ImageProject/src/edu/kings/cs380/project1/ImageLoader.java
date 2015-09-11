@@ -23,6 +23,7 @@ public class ImageLoader {
 		BufferedImage ri = ImageIO.read(theFile);
 		BufferedImage theImage = new BufferedImage(ri.getWidth(), ri.getHeight(), 
 				BufferedImage.TYPE_INT_ARGB);
+		// TODO
 		return theImage;
 	}
 	
