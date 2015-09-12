@@ -4,7 +4,7 @@
   <local-check-config name="kings" location="http://www.kings-cs.com/kings-cs/java/kings-cs-upper.xml" type="remote" description="">
     <additional-data name="cache-file" value="false"/>
   </local-check-config>
-  <fileset name="all" enabled="true" check-config-name="Kings" local="false">
+  <fileset name="all" enabled="true" check-config-name="kings" local="true">
     <file-match-pattern match-pattern="." include-pattern="true"/>
   </fileset>
 </fileset-config>

@@ -12,10 +12,11 @@ import java.awt.image.BufferedImage;
 public class ImageHandler {
 	
 	/**
-	 * Takes an Image and returns it in grayscale
+	 * Takes an Image and returns it in grayscale.
 	 * 
 	 * @param theImage the Image to turn to grayscale
 	 * @return the grayscaled image
+	 * (Modified from http://kings.mrooms2.net/mod/resource/view.php?id=147952)
 	 */
 	public BufferedImage grayScale(BufferedImage theImage) {
 		BufferedImage returnImage = theImage;
@@ -28,7 +29,7 @@ public class ImageHandler {
 				int green = c.getGreen();
 				int blue = c. getBlue();
 				int alpha = c.getAlpha();
-				int gray = (int) (0.299 * red + 0.587 * green + 0.114*blue);
+				int gray = (int) (0.299 * red + 0.587 * green + 0.114 * blue);
 				Color newColor = new Color(gray, gray, gray, alpha);
 				returnImage.setRGB(column, row, newColor.getRGB());
 			}
