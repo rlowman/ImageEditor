@@ -36,4 +36,9 @@ public class ImageHandler {
 		}
 		return returnImage;
 	}
+	
+//	public BufferedImage grayScaleParallel(BufferedImage theImage) {
+//		BufferedImage returnImage = theImage;
+//		
+//	}
 }
