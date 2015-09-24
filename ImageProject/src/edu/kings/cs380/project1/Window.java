@@ -108,7 +108,7 @@ public class Window implements ActionListener {
 		grayscaleButtonParallel = new JButton("Grayscale Parallel");
 		grayscaleButtonParallel.addActionListener(this);
 		loader = new ImageLoader();
-		handler = new ImageHandler();
+		handler = new ImageHandler(drawingPanel);
 		buttonPanel.add(grayscaleButton);
 		buttonPanel.add(grayscaleButtonParallel);
 		file.add(close);
@@ -133,28 +133,23 @@ public class Window implements ActionListener {
 			if( chooser.showOpenDialog(mainFrame) == JFileChooser.APPROVE_OPTION ) {
 				currentFile = chooser.getSelectedFile();
 				try {
-					currentImage = loader.loadFile(currentFile);
-					drawingPanel.setImage(currentImage);
-					drawingPanel.setVisible(true);
+					handler.loadFile(currentFile);
 					mainFrame.repaint();
 				} catch (IOException e) {
 					JOptionPane.showMessageDialog(mainFrame, "File Not Found", "Error", JOptionPane.ERROR_MESSAGE);
-					System.err.println(e.getMessage());
-					e.printStackTrace();
 				}
 			}
 		}
 		else if(ae.getSource() == grayscaleButton) {
-			if(currentImage != null) {
-				long startTime = System.nanoTime();
-				BufferedImage tempImage = handler.grayScale(currentImage);
-				long runTime = System.nanoTime() - startTime;
-				long actualTime = runTime / 1000000;
+			long startTime = System.nanoTime();
+			boolean temp = handler.grayScale(currentImage);
+			long runTime = System.nanoTime() - startTime;
+			long actualTime = runTime / 1000000;
+			if(temp) {
 				timeLabel.setText("Grayscale Algorithm Time in Milliseconds: " + actualTime);
-				drawingPanel.setImage(tempImage);
 				mainFrame.repaint();
 			}
-			else {
+			else {	
 				JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
 			}
 		}

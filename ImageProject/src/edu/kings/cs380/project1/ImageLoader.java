@@ -16,23 +16,6 @@ import javax.imageio.ImageIO;
 public class ImageLoader {
 	
 	/**
-	 * Loads an image from a file.
-	 *  
-	 * @param theFile the file to load to the program
-	 * @throws IOException if the file cannot be found
-	 * @return the image from the given file
-	 * (Modified from http://kings.mrooms2.net/mod/resource/view.php?id=147952)
-	 */
-	public BufferedImage loadFile(File theFile) throws IOException {
-		BufferedImage ri = ImageIO.read(theFile);
-		BufferedImage theImage = new BufferedImage(ri.getWidth(), ri.getHeight(), 
-				BufferedImage.TYPE_INT_ARGB);
-		Graphics g = theImage.getGraphics();
-		g.drawImage(ri, 0, 0, null);
-		return theImage;
-	}
-	
-	/**
 	 * Saves the changes made to the file.
 	 * 
 	 * @param theImage the Image to save to the given file

@@ -36,16 +36,16 @@ public class ImageLoaderTest {
 //		assertSame(actual, tempImage);
 	}
 	
-	/**
-	 * Tests that loadFile throws and exception when necessary.
-	 * 
-	 * @throws IOException when the file cannot be read
-	 */
-	@Test(expected = IOException.class)
-	public void testLoadFileFail() throws IOException {
-		File test = new File("failer");
-		testLoader.loadFile(test);
-	}
+//	/**
+//	 * Tests that loadFile throws and exception when necessary.
+//	 * 
+//	 * @throws IOException when the file cannot be read
+//	 */
+//	@Test(expected = IOException.class)
+//	public void testLoadFileFail() throws IOException {
+//		File test = new File("failer");
+//		testLoader.loadFile(test);
+//	}
 	
 	/**
 	 * Tests the saveFile method.

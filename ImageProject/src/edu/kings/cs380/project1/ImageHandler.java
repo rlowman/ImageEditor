@@ -1,6 +1,7 @@
 package edu.kings.cs380.project1;
 
 import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
@@ -9,7 +10,12 @@ import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Scanner;
+
+import javax.imageio.ImageIO;
+import javax.swing.JComponent;
+import javax.swing.JOptionPane;
 
 import org.jocl.CL;
 import org.jocl.Pointer;
@@ -31,6 +37,45 @@ import org.jocl.cl_program;
  */
 public class ImageHandler {
 	
+	/**The frame to draw images to*/
+	private ImagePanel frame;
+	
+	/**The current image being drawn to the frame*/
+	private BufferedImage currentImage;
+	
+	/**The current file being handled*/
+	private File currentFile;
+	
+	/**
+	 * Constructor for the ImageHandler class
+	 * 
+	 * @param theFrame the frame to draw the image too
+	 */
+	public ImageHandler(ImagePanel theFrame){
+		currentImage = null;
+		frame = theFrame;
+		frame.setImage(currentImage);
+		currentFile = null;
+	}
+	
+	/**
+	 * Loads an image from a file.
+	 *  
+	 * @param theFile the file to load to the program
+	 * @throws IOException if the file cannot be found
+	 * @return the image from the given file
+	 * (Modified from http://kings.mrooms2.net/mod/resource/view.php?id=147952)
+	 */
+	public void loadFile(File theFile) throws IOException {
+		BufferedImage ri = ImageIO.read(theFile);
+		currentFile = theFile;
+		BufferedImage currentImage = new BufferedImage(ri.getWidth(), ri.getHeight(), 
+				BufferedImage.TYPE_INT_ARGB);
+		Graphics g = currentImage.getGraphics();
+		g.drawImage(ri, 0, 0, null);
+		frame.setVisible(true);
+	}
+	
 	/**
 	 * Takes an Image and returns it in grayscale.
 	 * 
@@ -38,23 +83,27 @@ public class ImageHandler {
 	 * @return the grayscaled image
 	 * (Modified from http://kings.mrooms2.net/mod/resource/view.php?id=147952)
 	 */
-	public BufferedImage grayScale(BufferedImage theImage) {
-		BufferedImage returnImage = theImage;
-		int width = theImage.getWidth ();
-		int height = theImage.getHeight ();
-		for(int row = 0 ; row < height ; row ++) {
-			for (int column = 0; column < width; column ++) {
-				Color c = new Color (theImage.getRGB(column, row));
-				int red = c. getRed();
-				int green = c.getGreen();
-				int blue = c. getBlue();
-				int alpha = c.getAlpha();
-				int gray = (int) (0.299 * red + 0.587 * green + 0.114 * blue);
-				Color newColor = new Color(gray, gray, gray, alpha);
-				returnImage.setRGB(column, row, newColor.getRGB());
-			}
+	public boolean grayScale(BufferedImage theImage) {
+		if(currentImage == null) {
+			return false;
 		}
-		return returnImage;
+		else {
+			int width = theImage.getWidth ();
+			int height = theImage.getHeight ();
+			for(int row = 0 ; row < height ; row ++) {
+				for (int column = 0; column < width; column ++) {
+					Color c = new Color (theImage.getRGB(column, row));
+					int red = c. getRed();
+					int green = c.getGreen();
+					int blue = c. getBlue();
+					int alpha = c.getAlpha();
+					int gray = (int) (0.299 * red + 0.587 * green + 0.114 * blue);
+					Color newColor = new Color(gray, gray, gray, alpha);
+					currentImage.setRGB(column, row, newColor.getRGB());
+				}
+			}
+			return true;
+		}
 	}
 	
 	/**
