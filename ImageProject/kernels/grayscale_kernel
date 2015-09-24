@@ -1,0 +1,17 @@
+__kernel void
+grayscale_kernel ( __global const int * a ,
+			       __global int * result )
+{
+	int i = get_global_id (0);
+	
+    int a = (pixel & ALPHA_MASK) >> ALPHA OFFSET;
+	int r = (pixel & RED MASK) >> RED OFFSET;
+	int g = (pixel & GREEN MASK) >> GREEN OFFSET;
+	int b = (pixel & BLUE MASK) >> BLUE OFFSET;
+
+	int resultColor = (alpha << ALPHA OFFSET) |
+					  (red << RED OFFSET) |
+	                  (green << GREEN OFFSET) |
+                      (blue << BLUE OFFSET);
+	result[i] = resultColor;
+}

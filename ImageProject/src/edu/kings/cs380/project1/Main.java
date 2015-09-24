@@ -1,4 +1,7 @@
 package edu.kings.cs380.project1;
+
+import org.jocl.CL;
+
 /**
  * Main class for the image software
  * 
@@ -12,7 +15,7 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 		Window frame = new Window();
-		
+
 	}
 
 }

@@ -46,6 +46,9 @@ public class Window implements ActionListener {
 	/**Button that makes a picture grayscale.*/
 	private JButton grayscaleButton;
 	
+	/**Button that makes a picture grayscale using parallel programming*/
+	private JButton grayscaleButtonParallel;
+	
 	/**Button that saves the current image to the file.*/
 	private JMenuItem save;
 	
@@ -102,9 +105,12 @@ public class Window implements ActionListener {
 		close.addActionListener(this);
 		grayscaleButton = new JButton("Grayscale");
 		grayscaleButton.addActionListener(this);
+		grayscaleButtonParallel = new JButton("Grayscale Parallel");
+		grayscaleButtonParallel.addActionListener(this);
 		loader = new ImageLoader();
 		handler = new ImageHandler();
 		buttonPanel.add(grayscaleButton);
+		buttonPanel.add(grayscaleButtonParallel);
 		file.add(close);
 		mainFrame.add(buttonPanel);
 		mainFrame.add(drawingPanel);
@@ -169,6 +175,20 @@ public class Window implements ActionListener {
 			currentFile = null;
 			currentImage = null;
 			mainFrame.repaint();
+		}
+		else if(ae.getSource() == grayscaleButtonParallel) {
+			if(currentImage != null) {
+				long startTime = System.nanoTime();
+				BufferedImage tempImage = handler.grayScaleParallel(currentImage);
+				long runTime = System.nanoTime() - startTime;
+				long actualTime = runTime / 1000000;
+				timeLabel.setText("Grayscale Algorithm Time in Milliseconds: " + actualTime);
+				drawingPanel.setImage(tempImage);
+				mainFrame.repaint();
+			}
+			else {
+				JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
+			}
 		}
 	}
 }
