@@ -3,15 +3,24 @@ grayscale_kernel ( __global const int * a ,
 			       __global int * result )
 {
 	int i = get_global_id (0);
+	int ALPHA_MASK = 0xff000000;
+	int ALPHA_OFFSET = 24;
+	int RED_MASK = 0x00ff0000;
+	int RED_OFFSET = 16;
+	int GREEN_MASK = 0x0000ff00;
+	int GREEN_OFFSET = 8;
+	int BLUE_MASK = 0x000000ff;
+	int BLUE_OFFSET = 0;
 	
     int a = (pixel & ALPHA_MASK) >> ALPHA OFFSET;
 	int r = (pixel & RED MASK) >> RED OFFSET;
 	int g = (pixel & GREEN MASK) >> GREEN OFFSET;
 	int b = (pixel & BLUE MASK) >> BLUE OFFSET;
 
-	int resultColor = (alpha << ALPHA OFFSET) |
-					  (red << RED OFFSET) |
-	                  (green << GREEN OFFSET) |
-                      (blue << BLUE OFFSET);
+	int resultColor = (a << ALPHA OFFSET) |
+					  (r << RED OFFSET) |
+	                  (g << GREEN OFFSET) |
+                      (b << BLUE OFFSET);
+	
 	result[i] = resultColor;
 }

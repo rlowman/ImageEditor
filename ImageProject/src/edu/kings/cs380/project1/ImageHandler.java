@@ -116,13 +116,8 @@ public class ImageHandler {
 		DataBuffer sourceDataBuffer = sourceRaster.getDataBuffer();
 		DataBufferInt sourceBytes = (DataBufferInt)sourceDataBuffer;
 		int sourceData[] = sourceBytes.getData();
-		
-		int[]result = new float[sourceData.length];
-		
-		// Write the r e s u l t s to the BufferedImage named r e s u l t
-		DataBufferInt resultDataBuffer = new DataBufferInt(resultData, resultData.length);
-		Raster resultRaster = Raster.createRaster(theImage.getSampleModel(), resultDataBuffer, new Point(0, 0));
-		returnImage.setData(resultRaster);
+		int n = sourceData.length;
+		int[]result = new int[n];
 				
 		//Create pointers to arrays to give to kernel
 		Pointer ptrArrayA = Pointer.to(sourceData);
@@ -146,7 +141,6 @@ public class ImageHandler {
 				
 		//Set the arguments for the kernel
 		CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memArrayA));
-		CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memArrayB));
 		CL.clSetKernelArg(kernel, 2, Sizeof.cl_mem, Pointer.to(memResult));
 				
 		//Set the work−item dimensions
@@ -160,12 +154,16 @@ public class ImageHandler {
 		//Read the output data
 		CL.clEnqueueReadBuffer(commandQueue, memResult, CL.CL_TRUE, 0, n* Sizeof.cl_float, 
 				ptrResult, 0, null, null);
+		
+		//Write the results to the BufferedImage named result
+		DataBufferInt resultDataBuffer = new DataBufferInt(result, result.length);
+		Raster resultRaster = Raster.createRaster(theImage.getSampleModel(), resultDataBuffer, new Point(0, 0));
+		returnImage.setData(resultRaster);
 				
 		//Clean-up
 		CL.clReleaseKernel(kernel);
 		CL.clReleaseProgram(program);
 		CL.clReleaseMemObject(memArrayA);
-		CL.clReleaseMemObject(memArrayB);
 		CL.clReleaseMemObject(memResult);
 		CL.clReleaseCommandQueue(commandQueue);
 		CL.clReleaseContext(context);

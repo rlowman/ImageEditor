@@ -6,5 +6,5 @@ import org.jocl.CL;
  *
  */
 public class OpenCLSetUp {
-	CL.clSetExceptionsEnabled(true);
+//	CL.clSetExceptionsEnabled(true);
 }
