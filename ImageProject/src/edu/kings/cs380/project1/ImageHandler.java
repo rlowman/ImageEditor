@@ -46,15 +46,23 @@ public class ImageHandler {
 	/**The current file being handled*/
 	private File currentFile;
 	
+	/**The id of the selected device*/
+	private cl_device_id selectedDevice;
+	
+	/**The id of the selected platform*/
+	private cl_platform_id selectedPlatform;
+	
 	/**
 	 * Constructor for the ImageHandler class
 	 * 
 	 * @param theFrame the frame to draw the image too
 	 */
-	public ImageHandler(ImagePanel theFrame){
+	public ImageHandler(ImagePanel theFrame, cl_device_id theId, cl_platform_id thePlatform){
 		currentImage = null;
 		frame = theFrame;
 		currentFile = null;
+		selectedDevice = theId;
+		selectedPlatform = thePlatform;
 	}
 	
 	/**
@@ -148,52 +156,53 @@ public class ImageHandler {
 			return -1;
 		}
 		else {	
-			//Enable exceptions
-			CL.setExceptionsEnabled(true);
-					
-			//Selecting the device
-			final int platformIndex = 0;
-			final long deviceType = CL.CL_DEVICE_TYPE_ALL;
-			final int deviceIndex = 0;
-							
-			//Get number of platforms
-			int[] numberOfPlatformsArray = new int[1];
-			CL.clGetPlatformIDs(0, null, numberOfPlatformsArray);
-			int numberOfPlatforms = numberOfPlatformsArray[0];
-					
-			//Obtain a platform ID
-			cl_platform_id[] platforms = new cl_platform_id[numberOfPlatforms];
-			CL.clGetPlatformIDs(platforms.length, platforms, null);
-			cl_platform_id platform = platforms[platformIndex];
-					
-			//Initialize the context properties
+//			//Enable exceptions
+//			CL.setExceptionsEnabled(true);
+//					
+//			//Selecting the device
+//			final int platformIndex = 0;
+//			final long deviceType = CL.CL_DEVICE_TYPE_ALL;
+//			final int deviceIndex = 0;
+//							
+//			//Get number of platforms
+//			int[] numberOfPlatformsArray = new int[1];
+//			CL.clGetPlatformIDs(0, null, numberOfPlatformsArray);
+//			int numberOfPlatforms = numberOfPlatformsArray[0];
+//					
+//			//Obtain a platform ID
+//			cl_platform_id[] platforms = new cl_platform_id[numberOfPlatforms];
+//			CL.clGetPlatformIDs(platforms.length, platforms, null);
+//			cl_platform_id platform = platforms[platformIndex];
+//							
+//			//Obtain the number of devices for the platform
+//			int numberOfDevicesArray[] = new int[1];
+//			CL.clGetDeviceIDs(platform, deviceType, 0,
+//						null, numberOfDevicesArray);
+//			int numberOfDevices = numberOfDevicesArray[0];
+//					
+//			//Get a device ID
+//			cl_device_id[] devices = new cl_device_id[numberOfDevices];
+//			CL.clGetDeviceIDs(platform, deviceType, numberOfDevices, devices,
+//					null);
+//			cl_device_id device = devices[deviceIndex];
+			
+			//Initialize the context properties	
 			cl_context_properties contextProperties = new cl_context_properties();
-			contextProperties.addProperty(CL.CL_CONTEXT_PLATFORM, platform);
-					
-			//Obtain the number of devices for the platform
-			int numberOfDevicesArray[] = new int[1];
-			CL.clGetDeviceIDs(platform, deviceType, 0,
-						null, numberOfDevicesArray);
-			int numberOfDevices = numberOfDevicesArray[0];
-					
-			//Get a device ID
-			cl_device_id[] devices = new cl_device_id[numberOfDevices];
-			CL.clGetDeviceIDs(platform, deviceType, numberOfDevices, devices,
-					null);
-			cl_device_id device = devices[deviceIndex];
+			contextProperties.addProperty(CL.CL_CONTEXT_PLATFORM, selectedPlatform);
 					
 			//Create a context for the selected device
 			cl_context context = CL.clCreateContext(
-					contextProperties, 1,
-					new cl_device_id[]{device},
-					null, null, null);
+			contextProperties, 1,
+				new cl_device_id[]{selectedDevice},
+				null, null, null);		
+			
 					
 			//Create a command queve for the selected device
-			cl_command_queue commandQueue = CL.clCreateCommandQueue(context, device, 0, null);
+			cl_command_queue commandQueue = CL.clCreateCommandQueue(context, selectedDevice, 0, null);
 					
 			//Create Arrays to give to kernel
-			int width = currentImage.getWidth();
-			int height = currentImage.getHeight();
+//			int width = currentImage.getWidth();
+//			int height = currentImage.getHeight();
 			
 			WritableRaster sourceRaster = currentImage.getRaster();
 			DataBuffer sourceDataBuffer = sourceRaster.getDataBuffer();
@@ -256,8 +265,24 @@ public class ImageHandler {
 			return runTime;
 		}
 	}
-	
-	
+
+	/**
+	 * Gets the selected device
+	 * 
+	 * @return the id of the selected device
+	 */
+	public cl_device_id getSelectedDevice() {
+		return selectedDevice;
+	}
+
+	/**
+	 * Sets the selected device
+	 * 
+	 * @param selectedDevice the selected device
+	 */
+	public void setSelectedDevice(cl_device_id selectedDevice) {
+		this.selectedDevice = selectedDevice;
+	}
 	
 	/**
 	 * Reads and returns the string of a file

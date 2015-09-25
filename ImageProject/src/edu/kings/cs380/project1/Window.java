@@ -5,7 +5,10 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
 
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -15,6 +18,12 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButtonMenuItem;
+
+import org.jocl.CL;
+import org.jocl.cl_context;
+import org.jocl.cl_device_id;
+import org.jocl.cl_platform_id;
 
 
 /**
@@ -66,10 +75,18 @@ public class Window implements ActionListener {
 	
 	/**Open menu of the program.*/
 	private JMenuItem open;
+
+	private ButtonGroup deviceGroup;
 	
 	private JMenuItem saveAs;
 	
-	private JMenuItem devices;
+	private JMenu devices;
+	
+	private HashMap<cl_device_id, cl_platform_id> theDevices;
+	
+	private HashMap<String, cl_device_id> deviceNames;
+	
+	private HashMap<JRadioButtonMenuItem, cl_device_id> buttons; 
 	
 	/**
 	 * Constructor class for the main frame.
@@ -78,16 +95,30 @@ public class Window implements ActionListener {
 		currentImage = null;
 		currentFile = null;
 		
+		buttons = new HashMap<JRadioButtonMenuItem, cl_device_id>();
+		
 		mainFrame = new JFrame("Monarch Image Editing Studio");
 		mainFrame.setSize(700, 500);
 		mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+		deviceNames = new HashMap<String, cl_device_id>();
+		
+		cl_platform_id[] thePlatforms = DeviceSetUp.getPlatformIDs();
+		for(cl_platform_id temp: thePlatforms){
+			theDevices = DeviceSetUp.getDevices(temp);
+			if(theDevices.isEmpty()) {
+				System.out.println("flag");
+			}
+		}
+		
+		setDefaultGPU();
 		
 		menuBar = new JMenuBar();
 		file = new JMenu("File");
 		file.addActionListener(this);
 		open = new JMenuItem("Open");
 		open.addActionListener(this);
-		devices = new JMenuItem("Devices");
+		devices = new JMenu("Devices");
 		devices.addActionListener(this);
 		save = new JMenuItem("Save");
 		save.addActionListener(this);
@@ -115,7 +146,6 @@ public class Window implements ActionListener {
 		grayscaleButton.addActionListener(this);
 		grayscaleButtonParallel = new JButton("Grayscale Parallel");
 		grayscaleButtonParallel.addActionListener(this);
-		handler = new ImageHandler(drawingPanel);
 		buttonPanel.add(grayscaleButton);
 		buttonPanel.add(grayscaleButtonParallel);
 		mainFrame.add(buttonPanel);
@@ -124,6 +154,8 @@ public class Window implements ActionListener {
 		timeLabel = new JLabel("Time Label");
 		buttonPanel.add(timeLabel);
 		
+		deviceGroup = new ButtonGroup();
+		createButtons();
 		mainFrame.setVisible(true);
 	}
 	
@@ -137,9 +169,9 @@ public class Window implements ActionListener {
 		if(ae.getSource() == open) {
 			JFileChooser chooser = new JFileChooser();
 			if( chooser.showOpenDialog(mainFrame) == JFileChooser.APPROVE_OPTION ) {
-				currentFile = chooser.getSelectedFile();
+				File tempFile = chooser.getSelectedFile();
 				try {
-					handler.loadFile(currentFile);
+					handler.loadFile(tempFile);
 					mainFrame.repaint();
 				} catch (IOException e) {
 					JOptionPane.showMessageDialog(mainFrame, "File Not Found", "Error", JOptionPane.ERROR_MESSAGE);
@@ -174,7 +206,7 @@ public class Window implements ActionListener {
 			}
 		}
 		else if(ae.getSource() == saveAs) {
-			//do stuff
+			
 		}
 		else if(ae.getSource() == close) {
 			drawingPanel.setImage(null);
@@ -192,8 +224,61 @@ public class Window implements ActionListener {
 				JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
 			}
 		}
-		else {
-			
+		else if(ae.getSource() instanceof JRadioButtonMenuItem){
+			boolean found = false;
+			Iterator<JRadioButtonMenuItem> theIter = buttons.keySet().iterator();
+			while(theIter.hasNext() && !found) {
+				JRadioButtonMenuItem temp = theIter.next();
+				if(ae.getSource() == temp) {
+					
+				}
+			}
 		}
 	}
+	
+	private void createButtons() {
+		cl_platform_id[] thePlatforms = DeviceSetUp.getPlatformIDs();
+		for(int i = 0; i < thePlatforms.length; i ++) {
+			for(cl_device_id temp: theDevices.keySet()) {
+				String deviceName = DeviceSetUp.getDeviceName(temp);
+				if(deviceName == null) {
+					System.out.println("flag");
+				}
+				if(temp == null) {
+					System.out.println("flag");
+				}
+				JRadioButtonMenuItem newButton = new JRadioButtonMenuItem(deviceName);
+				deviceGroup.add(newButton);
+				devices.add(newButton);
+				deviceNames.put(deviceName, temp);
+				buttons.put(newButton, temp);
+				if(temp.equals(handler.getSelectedDevice())) {
+					newButton.setSelected(true);
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Sets the device at the beginning of the program
+	 */
+	private void setDefaultGPU() {
+		Iterator<cl_platform_id> iter = theDevices.values().iterator();
+		boolean gpuFound = false;
+		while(iter.hasNext() && !gpuFound) {
+			cl_platform_id temp = iter.next();
+			int numberOfGpuDevicesArray[] = new int[1];
+			CL.clGetDeviceIDs(temp, CL.CL_DEVICE_TYPE_GPU,0, null, numberOfGpuDevicesArray);
+			int numberOfDevices = numberOfGpuDevicesArray[0];
+			if(numberOfDevices > 0) {
+				cl_device_id devicesArray[] = new cl_device_id[numberOfDevices];
+				CL.clGetDeviceIDs(temp, CL.CL_DEVICE_TYPE_GPU, numberOfDevices, devicesArray, null);
+				handler = new ImageHandler(drawingPanel, devicesArray[0], temp);
+			}
+		}
+	}
+	
+//	public cl_context getDeviceContext() {
+//		
+//	}
 }
