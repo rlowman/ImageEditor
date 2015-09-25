@@ -54,7 +54,6 @@ public class ImageHandler {
 	public ImageHandler(ImagePanel theFrame){
 		currentImage = null;
 		frame = theFrame;
-		frame.setImage(currentImage);
 		currentFile = null;
 	}
 	
@@ -69,11 +68,13 @@ public class ImageHandler {
 	public void loadFile(File theFile) throws IOException {
 		BufferedImage ri = ImageIO.read(theFile);
 		currentFile = theFile;
-		BufferedImage currentImage = new BufferedImage(ri.getWidth(), ri.getHeight(), 
+		BufferedImage tempImage = new BufferedImage(ri.getWidth(), ri.getHeight(), 
 				BufferedImage.TYPE_INT_ARGB);
-		Graphics g = currentImage.getGraphics();
+		Graphics g = tempImage.getGraphics();
 		g.drawImage(ri, 0, 0, null);
 		frame.setVisible(true);
+		frame.setImage(tempImage);
+		currentImage = tempImage;
 	}
 	
 	/**
@@ -83,16 +84,16 @@ public class ImageHandler {
 	 * @return the grayscaled image
 	 * (Modified from http://kings.mrooms2.net/mod/resource/view.php?id=147952)
 	 */
-	public boolean grayScale(BufferedImage theImage) {
+	public boolean grayScale() {
 		if(currentImage == null) {
 			return false;
 		}
 		else {
-			int width = theImage.getWidth ();
-			int height = theImage.getHeight ();
+			int width = currentImage.getWidth ();
+			int height = currentImage.getHeight ();
 			for(int row = 0 ; row < height ; row ++) {
 				for (int column = 0; column < width; column ++) {
-					Color c = new Color (theImage.getRGB(column, row));
+					Color c = new Color (currentImage.getRGB(column, row));
 					int red = c. getRed();
 					int green = c.getGreen();
 					int blue = c. getBlue();
@@ -112,113 +113,115 @@ public class ImageHandler {
 	 * @param theImage the image to turn to grayscale
 	 * @return the given image in grayscale
 	 */
-	public BufferedImage grayScaleParallel(BufferedImage theImage) {
-		BufferedImage returnImage = theImage;
-		//Enable exceptions
-		CL.setExceptionsEnabled(true);
-				
-		//Selecting the device
-		final int platformIndex = 0;
-		final long deviceType = CL.CL_DEVICE_TYPE_ALL;
-		final int deviceIndex = 0;
-						
-		//Get number of platforms
-		int[] numberOfPlatformsArray = new int[1];
-		CL.clGetPlatformIDs(0, null, numberOfPlatformsArray);
-		int numberOfPlatforms = numberOfPlatformsArray[0];
-				
-		//Obtain a platform ID
-		cl_platform_id[] platforms = new cl_platform_id[numberOfPlatforms];
-		CL.clGetPlatformIDs(platforms.length, platforms, null);
-		cl_platform_id platform = platforms[platformIndex];
-				
-		//Initialize the context properties
-		cl_context_properties contextProperties = new cl_context_properties();
-		contextProperties.addProperty(CL.CL_CONTEXT_PLATFORM, platform);
-				
-		//Obtain the number of devices for the platform
-		int numberOfDevicesArray[] = new int[1];
-		CL.clGetDeviceIDs(platform, deviceType, 0,
-					null, numberOfDevicesArray);
-		int numberOfDevices = numberOfDevicesArray[0];
-				
-		//Get a device ID
-		cl_device_id[] devices = new cl_device_id[numberOfDevices];
-		CL.clGetDeviceIDs(platform, deviceType, numberOfDevices, devices,
-				null);
-		cl_device_id device = devices[deviceIndex];
-				
-		//Create a context for the selected device
-		cl_context context = CL.clCreateContext(
-				contextProperties, 1,
-				new cl_device_id[]{device},
-				null, null, null);
-				
-		//Create a command queve for the selected device
-		cl_command_queue commandQueue = CL.clCreateCommandQueue(context, device, 0, null);
-				
-		//Create Arrays to give to kernel
-		int width = theImage.getWidth();
-		int height = theImage.getHeight();
-		
-		WritableRaster sourceRaster = theImage.getRaster();
-		DataBuffer sourceDataBuffer = sourceRaster.getDataBuffer();
-		DataBufferInt sourceBytes = (DataBufferInt)sourceDataBuffer;
-		int sourceData[] = sourceBytes.getData();
-		int n = sourceData.length;
-		int[]result = new int[n];
-				
-		//Create pointers to arrays to give to kernel
-		Pointer ptrArrayA = Pointer.to(sourceData);
-		Pointer ptrResult = Pointer.to(result);
-				
-		cl_mem memArrayA = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
-				Sizeof.cl_float * n, ptrArrayA, null);
-		cl_mem memResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
-				Sizeof.cl_float * n, ptrResult, null);
-				
-		//Create the program from the source code
-		//Create the OpenCL kernel from the program
-		String source = readFile("kernels/hello_kernel");
-		cl_program program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
-				
-		//Build the program
-		CL.clBuildProgram(program, 0, null, null, null, null);
-				
-		//Create the kernel
-		cl_kernel kernel = CL.clCreateKernel(program, "hello_kernel", null);
-				
-		//Set the arguments for the kernel
-		CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memArrayA));
-		CL.clSetKernelArg(kernel, 2, Sizeof.cl_mem, Pointer.to(memResult));
-				
-		//Set the work−item dimensions
-		long[] globalWorkSize = new long[]{n};
-		long[] localWorkSize = new long[]{1};
-				
-		//Execute the kernel
-		CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
-				0, null, null);
-				
-		//Read the output data
-		CL.clEnqueueReadBuffer(commandQueue, memResult, CL.CL_TRUE, 0, n* Sizeof.cl_float, 
-				ptrResult, 0, null, null);
-		
-		//Write the results to the BufferedImage named result
-		DataBufferInt resultDataBuffer = new DataBufferInt(result, result.length);
-		Raster resultRaster = Raster.createRaster(theImage.getSampleModel(), resultDataBuffer, new Point(0, 0));
-		returnImage.setData(resultRaster);
-				
-		//Clean-up
-		CL.clReleaseKernel(kernel);
-		CL.clReleaseProgram(program);
-		CL.clReleaseMemObject(memArrayA);
-		CL.clReleaseMemObject(memResult);
-		CL.clReleaseCommandQueue(commandQueue);
-		CL.clReleaseContext(context);
-		
-		//Return the modified image
-		return returnImage;
+	public boolean grayScaleParallel() {
+		if(currentImage == null){
+			return false;
+		}
+		else {	
+			//Enable exceptions
+			CL.setExceptionsEnabled(true);
+					
+			//Selecting the device
+			final int platformIndex = 0;
+			final long deviceType = CL.CL_DEVICE_TYPE_ALL;
+			final int deviceIndex = 0;
+							
+			//Get number of platforms
+			int[] numberOfPlatformsArray = new int[1];
+			CL.clGetPlatformIDs(0, null, numberOfPlatformsArray);
+			int numberOfPlatforms = numberOfPlatformsArray[0];
+					
+			//Obtain a platform ID
+			cl_platform_id[] platforms = new cl_platform_id[numberOfPlatforms];
+			CL.clGetPlatformIDs(platforms.length, platforms, null);
+			cl_platform_id platform = platforms[platformIndex];
+					
+			//Initialize the context properties
+			cl_context_properties contextProperties = new cl_context_properties();
+			contextProperties.addProperty(CL.CL_CONTEXT_PLATFORM, platform);
+					
+			//Obtain the number of devices for the platform
+			int numberOfDevicesArray[] = new int[1];
+			CL.clGetDeviceIDs(platform, deviceType, 0,
+						null, numberOfDevicesArray);
+			int numberOfDevices = numberOfDevicesArray[0];
+					
+			//Get a device ID
+			cl_device_id[] devices = new cl_device_id[numberOfDevices];
+			CL.clGetDeviceIDs(platform, deviceType, numberOfDevices, devices,
+					null);
+			cl_device_id device = devices[deviceIndex];
+					
+			//Create a context for the selected device
+			cl_context context = CL.clCreateContext(
+					contextProperties, 1,
+					new cl_device_id[]{device},
+					null, null, null);
+					
+			//Create a command queve for the selected device
+			cl_command_queue commandQueue = CL.clCreateCommandQueue(context, device, 0, null);
+					
+			//Create Arrays to give to kernel
+			int width = currentImage.getWidth();
+			int height = currentImage.getHeight();
+			
+			WritableRaster sourceRaster = currentImage.getRaster();
+			DataBuffer sourceDataBuffer = sourceRaster.getDataBuffer();
+			DataBufferInt sourceBytes = (DataBufferInt)sourceDataBuffer;
+			int sourceData[] = sourceBytes.getData();
+			int n = sourceData.length;
+			int[]result = new int[n];
+					
+			//Create pointers to arrays to give to kernel
+			Pointer ptrArrayA = Pointer.to(sourceData);
+			Pointer ptrResult = Pointer.to(result);
+					
+			cl_mem memArrayA = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_float * n, ptrArrayA, null);
+			cl_mem memResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_float * n, ptrResult, null);
+					
+			//Create the program from the source code
+			//Create the OpenCL kernel from the program
+			String source = readFile("kernels/parallel_grayscale_kernel.cl");
+			cl_program program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
+					
+			//Build the program
+			CL.clBuildProgram(program, 0, null, null, null, null);
+					
+			//Create the kernel
+			cl_kernel kernel = CL.clCreateKernel(program, "parallel_grayscale", null);
+					
+			//Set the arguments for the kernel
+			CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memArrayA));
+			CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memResult));
+					
+			//Set the work−item dimensions
+			long[] globalWorkSize = new long[]{n};
+			long[] localWorkSize = new long[]{1};
+					
+			//Execute the kernel
+			CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+					0, null, null);
+					
+			//Read the output data
+			CL.clEnqueueReadBuffer(commandQueue, memResult, CL.CL_TRUE, 0, n* Sizeof.cl_float, 
+					ptrResult, 0, null, null);
+			
+			//Write the results to the BufferedImage named result
+			DataBufferInt resultDataBuffer = new DataBufferInt(result, result.length);
+			Raster resultRaster = Raster.createRaster(currentImage.getSampleModel(), resultDataBuffer, new Point(0, 0));
+			currentImage.setData(resultRaster);
+					
+			//Clean-up
+			CL.clReleaseKernel(kernel);
+			CL.clReleaseProgram(program);
+			CL.clReleaseMemObject(memArrayA);
+			CL.clReleaseMemObject(memResult);
+			CL.clReleaseCommandQueue(commandQueue);
+			CL.clReleaseContext(context);
+			return true;
+		}
 	}
 	
 	/**

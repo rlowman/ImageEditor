@@ -142,7 +142,7 @@ public class Window implements ActionListener {
 		}
 		else if(ae.getSource() == grayscaleButton) {
 			long startTime = System.nanoTime();
-			boolean temp = handler.grayScale(currentImage);
+			boolean temp = handler.grayScale();
 			long runTime = System.nanoTime() - startTime;
 			long actualTime = runTime / 1000000;
 			if(temp) {
@@ -172,16 +172,15 @@ public class Window implements ActionListener {
 			mainFrame.repaint();
 		}
 		else if(ae.getSource() == grayscaleButtonParallel) {
-			if(currentImage != null) {
-				long startTime = System.nanoTime();
-				BufferedImage tempImage = handler.grayScaleParallel(currentImage);
-				long runTime = System.nanoTime() - startTime;
-				long actualTime = runTime / 1000000;
-				timeLabel.setText("Grayscale Algorithm Time in Milliseconds: " + actualTime);
-				drawingPanel.setImage(tempImage);
+			long startTime = System.nanoTime();
+			boolean temp = handler.grayScaleParallel();
+			long runTime = System.nanoTime() - startTime;
+			long actualTime = runTime / 1000000;
+			if(temp) {
+				timeLabel.setText("Parallel Grayscale Algorithm Time in Milliseconds: " + actualTime);
 				mainFrame.repaint();
 			}
-			else {
+			else {	
 				JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
 			}
 		}
