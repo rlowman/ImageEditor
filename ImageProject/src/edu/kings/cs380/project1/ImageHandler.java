@@ -78,6 +78,36 @@ public class ImageHandler {
 	}
 	
 	/**
+	 * Saves the changes made to the file.
+	 * 
+	 * @param theImage the Image to save to the given file
+	 * @param theFile the File to save the image to
+	 * @throws IOException if the image cannot be saved
+	 * (Modified from http://kings.mrooms2.net/mod/resource/view.php?id=147952)
+	 */
+	public boolean saveFile() throws IOException {
+		if(currentImage != null) {
+			ImageIO.write(currentImage, "png", currentFile);
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	
+	/**
+	 * Saves the changes made to the file.
+	 * 
+	 * @param theImage the Image to save to the given file
+	 * @param theFile the File to save the image to
+	 * @throws IOException if the image cannot be saved
+	 * (Modified from http://kings.mrooms2.net/mod/resource/view.php?id=147952)
+	 */
+	public void saveAsFile(File theFile) throws IOException {
+		ImageIO.write(currentImage, "png", theFile);
+	}
+	
+	/**
 	 * Takes an Image and returns it in grayscale.
 	 * 
 	 * @param theImage the Image to turn to grayscale
@@ -113,9 +143,9 @@ public class ImageHandler {
 	 * @param theImage the image to turn to grayscale
 	 * @return the given image in grayscale
 	 */
-	public boolean grayScaleParallel() {
+	public long grayScaleParallel() {
 		if(currentImage == null){
-			return false;
+			return -1;
 		}
 		else {	
 			//Enable exceptions
@@ -201,8 +231,11 @@ public class ImageHandler {
 			long[] localWorkSize = new long[]{1};
 					
 			//Execute the kernel
+			long startTime = System.nanoTime();
 			CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
 					0, null, null);
+			long runTime = System.nanoTime() - startTime;
+	
 					
 			//Read the output data
 			CL.clEnqueueReadBuffer(commandQueue, memResult, CL.CL_TRUE, 0, n* Sizeof.cl_float, 
@@ -220,9 +253,11 @@ public class ImageHandler {
 			CL.clReleaseMemObject(memResult);
 			CL.clReleaseCommandQueue(commandQueue);
 			CL.clReleaseContext(context);
-			return true;
+			return runTime;
 		}
 	}
+	
+	
 	
 	/**
 	 * Reads and returns the string of a file

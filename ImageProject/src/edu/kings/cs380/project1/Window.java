@@ -31,9 +31,6 @@ public class Window implements ActionListener {
 	/**MenuBar of the program.*/
 	private JMenuBar menuBar;
 	
-	/**Tool to help load files to the frame.*/
-	private ImageLoader loader;
-	
 	/**Tool to help handle the algorithms necessary for the images.*/
 	private ImageHandler handler;
 	
@@ -70,6 +67,10 @@ public class Window implements ActionListener {
 	/**Open menu of the program.*/
 	private JMenuItem open;
 	
+	private JMenuItem saveAs;
+	
+	private JMenuItem devices;
+	
 	/**
 	 * Constructor class for the main frame.
 	 */
@@ -86,8 +87,20 @@ public class Window implements ActionListener {
 		file.addActionListener(this);
 		open = new JMenuItem("Open");
 		open.addActionListener(this);
+		devices = new JMenuItem("Devices");
+		devices.addActionListener(this);
+		save = new JMenuItem("Save");
+		save.addActionListener(this);
+		saveAs = new JMenuItem("Save As");
+		saveAs.addActionListener(this);
+		close = new JMenuItem("Close");
+		close.addActionListener(this);
 		file.add(open);
+		file.add(close);
+		file.add(save);
+		file.add(saveAs);
 		menuBar.add(file);
+		menuBar.add(devices);
 		mainFrame.setJMenuBar(menuBar);
 		
 		GridLayout mainLayout = new GridLayout(1,2);
@@ -98,20 +111,13 @@ public class Window implements ActionListener {
 		buttonPanel.setLayout(buttonLayout);
 		drawingPanel = new ImagePanel(null);
 		
-		save = new JMenuItem("Save");
-		save.addActionListener(this);
-		file.add(save);
-		close = new JMenuItem("Close");
-		close.addActionListener(this);
 		grayscaleButton = new JButton("Grayscale");
 		grayscaleButton.addActionListener(this);
 		grayscaleButtonParallel = new JButton("Grayscale Parallel");
 		grayscaleButtonParallel.addActionListener(this);
-		loader = new ImageLoader();
 		handler = new ImageHandler(drawingPanel);
 		buttonPanel.add(grayscaleButton);
 		buttonPanel.add(grayscaleButtonParallel);
-		file.add(close);
 		mainFrame.add(buttonPanel);
 		mainFrame.add(drawingPanel);
 		
@@ -154,16 +160,21 @@ public class Window implements ActionListener {
 			}
 		}
 		else if(ae.getSource() == save) {
-			if(currentImage != null) {
-				try {
-					loader.saveFile(currentImage, currentFile);
-				} catch (IOException e) {
-					JOptionPane.showMessageDialog(mainFrame, "File could not be saved", "Error", JOptionPane.ERROR_MESSAGE);
+			boolean temp;
+			try {
+				temp = handler.saveFile();
+				if(temp) {
+					JOptionPane.showMessageDialog(mainFrame, "File Saved", "Save", JOptionPane.OK_OPTION);
 				}
+				else {
+					JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
+				}
+			} catch (IOException e) {
+				JOptionPane.showMessageDialog(mainFrame, "The File cound not be saved", "Error", JOptionPane.ERROR_MESSAGE);
 			}
-			else {
-				JOptionPane.showMessageDialog(mainFrame, "No File Selected", "Error", JOptionPane.ERROR_MESSAGE);
-			}
+		}
+		else if(ae.getSource() == saveAs) {
+			//do stuff
 		}
 		else if(ae.getSource() == close) {
 			drawingPanel.setImage(null);
@@ -172,17 +183,17 @@ public class Window implements ActionListener {
 			mainFrame.repaint();
 		}
 		else if(ae.getSource() == grayscaleButtonParallel) {
-			long startTime = System.nanoTime();
-			boolean temp = handler.grayScaleParallel();
-			long runTime = System.nanoTime() - startTime;
-			long actualTime = runTime / 1000000;
-			if(temp) {
-				timeLabel.setText("Parallel Grayscale Algorithm Time in Milliseconds: " + actualTime);
+			long temp = handler.grayScaleParallel();
+			if(temp > 0) {
+				timeLabel.setText("Parallel Grayscale Algorithm Time in nanoseconds:\n" + temp);
 				mainFrame.repaint();
 			}
 			else {	
 				JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
 			}
+		}
+		else {
+			
 		}
 	}
 }
