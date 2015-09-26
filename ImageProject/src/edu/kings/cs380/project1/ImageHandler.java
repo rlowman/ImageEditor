@@ -14,8 +14,6 @@ import java.io.IOException;
 import java.util.Scanner;
 
 import javax.imageio.ImageIO;
-import javax.swing.JComponent;
-import javax.swing.JOptionPane;
 
 import org.jocl.CL;
 import org.jocl.Pointer;
@@ -30,32 +28,34 @@ import org.jocl.cl_platform_id;
 import org.jocl.cl_program;
 
 /**
- * Handles the image algorithms necessary for the project
+ * Handles the image algorithms necessary for the project.
  * 
  * @author Robert Lowman
- * @date 9.8.2015
+ * @version 9.8.2015
  */
 public class ImageHandler {
 	
-	/**The frame to draw images to*/
+	/**The frame to draw images to.*/
 	private ImagePanel frame;
 	
-	/**The current image being drawn to the frame*/
+	/**The current image being drawn to the frame.*/
 	private BufferedImage currentImage;
 	
-	/**The current file being handled*/
+	/**The current file being handled.*/
 	private File currentFile;
 	
-	/**The id of the selected device*/
+	/**The id of the selected device.*/
 	private cl_device_id selectedDevice;
 	
-	/**The id of the selected platform*/
+	/**The id of the selected platform.*/
 	private cl_platform_id selectedPlatform;
 	
 	/**
-	 * Constructor for the ImageHandler class
+	 * Constructor for the ImageHandler class.
 	 * 
 	 * @param theFrame the frame to draw the image too
+	 * @param theId the id of the selected device
+	 * @param thePlatform the id of the selected platform
 	 */
 	public ImageHandler(ImagePanel theFrame, cl_device_id theId, cl_platform_id thePlatform){
 		currentImage = null;
@@ -70,7 +70,6 @@ public class ImageHandler {
 	 *  
 	 * @param theFile the file to load to the program
 	 * @throws IOException if the file cannot be found
-	 * @return the image from the given file
 	 * (Modified from http://kings.mrooms2.net/mod/resource/view.php?id=147952)
 	 */
 	public void loadFile(File theFile) throws IOException {
@@ -88,45 +87,47 @@ public class ImageHandler {
 	/**
 	 * Saves the changes made to the file.
 	 * 
-	 * @param theImage the Image to save to the given file
-	 * @param theFile the File to save the image to
 	 * @throws IOException if the image cannot be saved
+	 * @return true if the file was saved false otherwise
 	 * (Modified from http://kings.mrooms2.net/mod/resource/view.php?id=147952)
 	 */
 	public boolean saveFile() throws IOException {
+		boolean returnValue = false;
 		if(currentImage != null) {
 			ImageIO.write(currentImage, "png", currentFile);
-			return true;
+			returnValue = true;
 		}
-		else {
-			return false;
-		}
+		return returnValue;
 	}
 	
 	/**
 	 * Saves the changes made to the file.
 	 * 
-	 * @param theImage the Image to save to the given file
 	 * @param theFile the File to save the image to
+	 * @return true if the file was saved, false otherwise
 	 * @throws IOException if the image cannot be saved
 	 * (Modified from http://kings.mrooms2.net/mod/resource/view.php?id=147952)
 	 */
-	public void saveAsFile(File theFile) throws IOException {
-		ImageIO.write(currentImage, "png", theFile);
+	public boolean saveAsFile(File theFile) {
+		boolean returnValue = false;
+		try {
+			ImageIO.write(currentImage, "png", theFile);
+			returnValue = true;
+		} catch (IOException e) {
+			returnValue = false;
+		}
+		return returnValue;
 	}
 	
 	/**
 	 * Takes an Image and returns it in grayscale.
 	 * 
-	 * @param theImage the Image to turn to grayscale
-	 * @return the grayscaled image
+	 * @return true if the image was grayscaled, false otherwise
 	 * (Modified from http://kings.mrooms2.net/mod/resource/view.php?id=147952)
 	 */
 	public boolean grayScale() {
-		if(currentImage == null) {
-			return false;
-		}
-		else {
+		boolean returnValue = false;
+		if(currentImage != null) {
 			int width = currentImage.getWidth ();
 			int height = currentImage.getHeight ();
 			for(int row = 0 ; row < height ; row ++) {
@@ -141,51 +142,22 @@ public class ImageHandler {
 					currentImage.setRGB(column, row, newColor.getRGB());
 				}
 			}
-			return true;
+			returnValue = true;
 		}
+		return returnValue;
 	}
 	
 	/**
-	 * Returns the image in grayscale using parallel programming
+	 * Returns the image in grayscale using parallel programming.
 	 * 
-	 * @param theImage the image to turn to grayscale
 	 * @return the given image in grayscale
 	 */
 	public long grayScaleParallel() {
+		long returnValue;
 		if(currentImage == null){
-			return -1;
+			returnValue = -1;
 		}
-		else {	
-//			//Enable exceptions
-//			CL.setExceptionsEnabled(true);
-//					
-//			//Selecting the device
-//			final int platformIndex = 0;
-//			final long deviceType = CL.CL_DEVICE_TYPE_ALL;
-//			final int deviceIndex = 0;
-//							
-//			//Get number of platforms
-//			int[] numberOfPlatformsArray = new int[1];
-//			CL.clGetPlatformIDs(0, null, numberOfPlatformsArray);
-//			int numberOfPlatforms = numberOfPlatformsArray[0];
-//					
-//			//Obtain a platform ID
-//			cl_platform_id[] platforms = new cl_platform_id[numberOfPlatforms];
-//			CL.clGetPlatformIDs(platforms.length, platforms, null);
-//			cl_platform_id platform = platforms[platformIndex];
-//							
-//			//Obtain the number of devices for the platform
-//			int numberOfDevicesArray[] = new int[1];
-//			CL.clGetDeviceIDs(platform, deviceType, 0,
-//						null, numberOfDevicesArray);
-//			int numberOfDevices = numberOfDevicesArray[0];
-//					
-//			//Get a device ID
-//			cl_device_id[] devices = new cl_device_id[numberOfDevices];
-//			CL.clGetDeviceIDs(platform, deviceType, numberOfDevices, devices,
-//					null);
-//			cl_device_id device = devices[deviceIndex];
-			
+		else {
 			//Initialize the context properties	
 			cl_context_properties contextProperties = new cl_context_properties();
 			contextProperties.addProperty(CL.CL_CONTEXT_PLATFORM, selectedPlatform);
@@ -197,13 +169,10 @@ public class ImageHandler {
 				null, null, null);		
 			
 					
-			//Create a command queve for the selected device
+			//Create a command queue for the selected device
 			cl_command_queue commandQueue = CL.clCreateCommandQueue(context, selectedDevice, 0, null);
-					
-			//Create Arrays to give to kernel
-//			int width = currentImage.getWidth();
-//			int height = currentImage.getHeight();
-			
+
+			//Get Raster information for array
 			WritableRaster sourceRaster = currentImage.getRaster();
 			DataBuffer sourceDataBuffer = sourceRaster.getDataBuffer();
 			DataBufferInt sourceBytes = (DataBufferInt)sourceDataBuffer;
@@ -247,7 +216,7 @@ public class ImageHandler {
 	
 					
 			//Read the output data
-			CL.clEnqueueReadBuffer(commandQueue, memResult, CL.CL_TRUE, 0, n* Sizeof.cl_float, 
+			CL.clEnqueueReadBuffer(commandQueue, memResult, CL.CL_TRUE, 0, n * Sizeof.cl_float, 
 					ptrResult, 0, null, null);
 			
 			//Write the results to the BufferedImage named result
@@ -262,12 +231,13 @@ public class ImageHandler {
 			CL.clReleaseMemObject(memResult);
 			CL.clReleaseCommandQueue(commandQueue);
 			CL.clReleaseContext(context);
-			return runTime;
+			returnValue = runTime;
 		}
+		return returnValue;
 	}
 
 	/**
-	 * Gets the selected device
+	 * Gets the selected device.
 	 * 
 	 * @return the id of the selected device
 	 */
@@ -276,7 +246,7 @@ public class ImageHandler {
 	}
 
 	/**
-	 * Sets the selected device
+	 * Sets the selected device.
 	 * 
 	 * @param selectedDevice the selected device
 	 */
@@ -285,7 +255,7 @@ public class ImageHandler {
 	}
 	
 	/**
-	 * Reads and returns the string of a file
+	 * Reads and returns the string of a file.
 	 * 
 	 * @param filename the name of the file to read
 	 * @return the String of the file
@@ -304,5 +274,32 @@ public class ImageHandler {
 			e.printStackTrace();
 			return null;
 		}
+	}
+
+	/**
+	 * Sets the selected information.
+	 * 
+	 * @param thePlatform the new selected platform
+	 */
+	public void setSelectedPlatform(cl_platform_id thePlatform) {
+		selectedPlatform = thePlatform;
+	}
+	
+	/**
+	 * Gets the currently selected platform.
+	 * 
+	 * @return the selected platform
+	 */
+	public cl_platform_id getSelectedPlatform() {
+		return selectedPlatform;
+	}
+
+	/**
+	 * Closes the current image.
+	 */
+	public void close() {
+		frame.setImage(null);
+		currentImage = null;
+		currentFile = null;
 	}
 }

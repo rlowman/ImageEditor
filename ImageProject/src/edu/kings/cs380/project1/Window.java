@@ -2,7 +2,6 @@ package edu.kings.cs380.project1;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -21,7 +20,6 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButtonMenuItem;
 
 import org.jocl.CL;
-import org.jocl.cl_context;
 import org.jocl.cl_device_id;
 import org.jocl.cl_platform_id;
 
@@ -52,7 +50,7 @@ public class Window implements ActionListener {
 	/**Button that makes a picture grayscale.*/
 	private JButton grayscaleButton;
 	
-	/**Button that makes a picture grayscale using parallel programming*/
+	/**Button that makes a picture grayscale using parallel programming.*/
 	private JButton grayscaleButtonParallel;
 	
 	/**Button that saves the current image to the file.*/
@@ -64,41 +62,39 @@ public class Window implements ActionListener {
 	/**Label that states the time of each processing algorithm.*/
 	private JLabel timeLabel;
 	
-	/**The current image drawn to the screen.*/
-	private BufferedImage currentImage;
-	
-	/**The current file being processed.*/
-	private File currentFile;
-	
 	/**File menu of the program.*/
 	private JMenu file; 
 	
 	/**Open menu of the program.*/
 	private JMenuItem open;
-
+	
+	/**The button group of available devices.*/
 	private ButtonGroup deviceGroup;
 	
+	/**Menu Item for the saveAs function.*/
 	private JMenuItem saveAs;
 	
+	/**Menu Item for available devices.*/
 	private JMenu devices;
 	
+	/**HashMap of all the Devices.*/
 	private HashMap<cl_device_id, cl_platform_id> theDevices;
 	
+	/**HashMap of all the device names.*/
 	private HashMap<String, cl_device_id> deviceNames;
 	
+	/**HashMap of device buttons.*/
 	private HashMap<JRadioButtonMenuItem, cl_device_id> buttons; 
 	
 	/**
 	 * Constructor class for the main frame.
 	 */
 	public Window() {
-		currentImage = null;
-		currentFile = null;
 		
 		buttons = new HashMap<JRadioButtonMenuItem, cl_device_id>();
 		
 		mainFrame = new JFrame("Monarch Image Editing Studio");
-		mainFrame.setSize(700, 500);
+		mainFrame.setSize(1000, 500);
 		mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 		deviceNames = new HashMap<String, cl_device_id>();
@@ -111,6 +107,7 @@ public class Window implements ActionListener {
 			}
 		}
 		
+		drawingPanel = new ImagePanel(null);
 		setDefaultGPU();
 		
 		menuBar = new JMenuBar();
@@ -140,7 +137,6 @@ public class Window implements ActionListener {
 		GridLayout buttonLayout = new GridLayout(6,1);
 		buttonPanel = new JPanel();
 		buttonPanel.setLayout(buttonLayout);
-		drawingPanel = new ImagePanel(null);
 		
 		grayscaleButton = new JButton("Grayscale");
 		grayscaleButton.addActionListener(this);
@@ -168,7 +164,7 @@ public class Window implements ActionListener {
 	public void actionPerformed(ActionEvent ae) {
 		if(ae.getSource() == open) {
 			JFileChooser chooser = new JFileChooser();
-			if( chooser.showOpenDialog(mainFrame) == JFileChooser.APPROVE_OPTION ) {
+			if(chooser.showOpenDialog(mainFrame) == JFileChooser.APPROVE_OPTION) {
 				File tempFile = chooser.getSelectedFile();
 				try {
 					handler.loadFile(tempFile);
@@ -206,12 +202,20 @@ public class Window implements ActionListener {
 			}
 		}
 		else if(ae.getSource() == saveAs) {
-			
+			JFileChooser chooser = new JFileChooser();
+			if(chooser.showSaveDialog(mainFrame) == JFileChooser.APPROVE_OPTION) {
+				File newFile = chooser.getSelectedFile();
+				if(!chooser.getSelectedFile().getAbsolutePath().contains(".png")){
+					 newFile = new File(chooser.getSelectedFile().getAbsolutePath() + ".png");
+				}
+				boolean saved = handler.saveAsFile(newFile);
+				if(!saved) {
+					JOptionPane.showMessageDialog(mainFrame, "The File cound not be saved", "Error", JOptionPane.ERROR_MESSAGE);
+				}
+			}
 		}
 		else if(ae.getSource() == close) {
-			drawingPanel.setImage(null);
-			currentFile = null;
-			currentImage = null;
+			handler.close();
 			mainFrame.repaint();
 		}
 		else if(ae.getSource() == grayscaleButtonParallel) {
@@ -230,12 +234,17 @@ public class Window implements ActionListener {
 			while(theIter.hasNext() && !found) {
 				JRadioButtonMenuItem temp = theIter.next();
 				if(ae.getSource() == temp) {
-					
+					cl_device_id newDevice = buttons.get(temp);
+					handler.setSelectedDevice(newDevice);
+					handler.setSelectedPlatform(theDevices.get(newDevice));
 				}
 			}
 		}
 	}
 	
+	/**
+	 * Creates the buttons necessary for the available devices.
+	 */
 	private void createButtons() {
 		cl_platform_id[] thePlatforms = DeviceSetUp.getPlatformIDs();
 		for(int i = 0; i < thePlatforms.length; i ++) {
@@ -260,7 +269,7 @@ public class Window implements ActionListener {
 	}
 	
 	/**
-	 * Sets the device at the beginning of the program
+	 * Sets the device at the beginning of the program.
 	 */
 	private void setDefaultGPU() {
 		Iterator<cl_platform_id> iter = theDevices.values().iterator();
@@ -277,8 +286,4 @@ public class Window implements ActionListener {
 			}
 		}
 	}
-	
-//	public cl_context getDeviceContext() {
-//		
-//	}
 }

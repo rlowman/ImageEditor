@@ -1,0 +1,7 @@
+Source Code
+http://kings.mrooms2.net/mod/resource/view.php?id=147952
+Three different pieces of code were taken from this link. The first was the Save File to and Image, 
+where I modified the variables to find into my extended JPanel class. The other piece of code taken from 
+this link was the algorithm that loads images from a file. Modifications were similar to the save file 
+algorithm. The last piece of code taken from this link was a grayscale algorithm, where I had to create a
+new color to modify the image.

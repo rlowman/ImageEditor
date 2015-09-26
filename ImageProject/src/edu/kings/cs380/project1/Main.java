@@ -1,17 +1,18 @@
 package edu.kings.cs380.project1;
 
-import org.jocl.CL;
 
 /**
- * Main class for the image software
+ * Main class for the image software.
  * 
  * @author Robert Lowman
- * @date 9.8.2015
+ * @version 9.8.2015
  */
 public class Main {
 
 	/**
-	 * @param args
+	 * Main method for the program.
+	 * 
+	 * @param args Array of arguments
 	 */
 	public static void main(String[] args) {
 		Window frame = new Window();

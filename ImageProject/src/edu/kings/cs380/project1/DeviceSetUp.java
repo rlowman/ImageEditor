@@ -1,21 +1,22 @@
 package edu.kings.cs380.project1;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 
 import org.jocl.CL;
 import org.jocl.Pointer;
 import org.jocl.cl_device_id;
 import org.jocl.cl_platform_id;
 /**
- * @author guest-zAlVnh
+ * Handles OpenCL code.
+ * 
+ * @author Robert Lowman
+ * @version 9.22.2015
  *
  */
 public class DeviceSetUp {
 	
 	/**
-	 * Gets all of the platform IDs of the current machine
+	 * Gets all of the platform IDs of the current machine.
 	 * 
 	 * @return ArrayList of available platforms
 	 */
@@ -27,13 +28,13 @@ public class DeviceSetUp {
 		int numPlatforms = numberOfPlatformsArray [0];
 		
 		//Get platform IDs
-		cl_platform_id[] platforms= new cl_platform_id[numPlatforms];
+		cl_platform_id[] platforms = new cl_platform_id[numPlatforms];
 		CL.clGetPlatformIDs(platforms.length, platforms, null);
 		return platforms;	
 	}
 	
 	/**
-	 * Gets the devices associated with the given platform
+	 * Gets the devices associated with the given platform.
 	 * 
 	 * @param theId the ID of the platform to get devices of
 	 * @return HashMap of device Id mapped to their String value
@@ -58,9 +59,9 @@ public class DeviceSetUp {
 	}
 	
 	/**
-	 * Gets the names of the devices in the given array
+	 * Gets the names of the devices in the given array.
 	 * 
-	 * @param theDevices the devices to get the names of
+	 * @param theDevice the device to get the names of
 	 * @return HashMap of device mapped with String value
 	 */
 	public static String getDeviceName(cl_device_id theDevice) {
@@ -68,7 +69,7 @@ public class DeviceSetUp {
 		CL.clGetDeviceInfo(theDevice, CL.CL_DEVICE_NAME, 0, null, size);
 		byte buffer[] = new byte[(int)size[0]];
 		CL.clGetDeviceInfo(theDevice, CL.CL_DEVICE_NAME, buffer.length, Pointer.to(buffer), null);
-		String deviceName = new String (buffer, 0, buffer.length -1);
+		String deviceName = new String (buffer, 0, buffer.length - 1);
 		return deviceName;
 	}
 }

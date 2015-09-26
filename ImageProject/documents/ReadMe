@@ -1,0 +1,14 @@
+ReadMe File
+Overview: My program has the basic features any image software would have. The controls for the 
+first part of this project can be found in the file menu at the top of the screen. I have considered 
+the fact that more options besides grayscale will become available, which can be added at the bottom of the 
+grayscale button. The picture can be opened from a .png file, edited, then saved to the same file. The program has 
+two choices for grayscaling, using either parallel programming or sequential. 
+
+File Types Supported: PNG
+
+Bugs: The only known limitation to this design so far is that there is no undo button. So, once an edit 
+like grayscale is committed, then the only way to reset it is to close the file and reopen it. This is a 
+simple fix , however it is not programmed at the time. 
+
+*My test cases were not complete as I could not get them to pass. I have commented them out to fix them later*
