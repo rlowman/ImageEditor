@@ -235,6 +235,49 @@ public class ImageHandler {
 		}
 		return returnValue;
 	}
+	
+	/**
+	 * Blurs the image using sequential computing
+	 * 
+	 * @return the time in nanoseconds
+	 */
+	public long sequentialBlur() {
+		long returnValue = -1;
+		if(currentImage != null) {
+			int height = currentImage.getHeight();
+			int width = currentImage.getWidth();
+			int[] redValues = new int[height*width];
+			int[] greenValues = new int[height*width];
+			int[] blueValues = new int[height*width];
+			int pixelCount = 0;
+			for(int row = 0 ; row < height ; row ++) {
+				for (int column = 0; column < width; column ++) {
+					Color c = new Color (currentImage.getRGB(column, row));
+					int red = c. getRed();
+					int green = c.getGreen();
+					int blue = c. getBlue();
+					redValues[pixelCount] = red;
+					greenValues[pixelCount] = green;
+					blueValues[pixelCount] = blue;
+					pixelCount++;
+				}
+			}
+		}
+		return returnValue;
+	}
+	
+	/**
+	 * Blurs the image using parallel computing
+	 * 
+	 * @return the time in nanoseconds
+	 */
+	public long parallelBlur() {
+		long returnValue = -1;
+		if(currentImage != null) {
+			
+		}
+		return returnValue;
+	}
 
 	/**
 	 * Gets the selected device.
@@ -252,28 +295,6 @@ public class ImageHandler {
 	 */
 	public void setSelectedDevice(cl_device_id selectedDevice) {
 		this.selectedDevice = selectedDevice;
-	}
-	
-	/**
-	 * Reads and returns the string of a file.
-	 * 
-	 * @param filename the name of the file to read
-	 * @return the String of the file
-	 */
-	private static String readFile(String filename){
-		String result = "";
-		File file = new File(filename);
-		try {
-			Scanner scanner = new Scanner(file);
-			while(scanner.hasNextLine()) {
-				result += scanner.nextLine() + "\n";
-			}
-			scanner.close();
-			return result;
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			return null;
-		}
 	}
 
 	/**
@@ -301,5 +322,27 @@ public class ImageHandler {
 		frame.setImage(null);
 		currentImage = null;
 		currentFile = null;
+	}
+
+	/**
+	 * Reads and returns the string of a file.
+	 * 
+	 * @param filename the name of the file to read
+	 * @return the String of the file
+	 */
+	private static String readFile(String filename){
+		String result = "";
+		File file = new File(filename);
+		try {
+			Scanner scanner = new Scanner(file);
+			while(scanner.hasNextLine()) {
+				result += scanner.nextLine() + "\n";
+			}
+			scanner.close();
+			return result;
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 }

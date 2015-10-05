@@ -77,6 +77,12 @@ public class Window implements ActionListener {
 	/**Menu Item for available devices.*/
 	private JMenu devices;
 	
+	/**Button that blurs the image using sequential computing*/
+	private JButton seqBlur;
+	
+	/**Button that blurs the image using parellel computing*/
+	private JButton parallelBlur;
+	
 	/**HashMap of all the Devices.*/
 	private HashMap<cl_device_id, cl_platform_id> theDevices;
 	
@@ -142,8 +148,14 @@ public class Window implements ActionListener {
 		grayscaleButton.addActionListener(this);
 		grayscaleButtonParallel = new JButton("Grayscale Parallel");
 		grayscaleButtonParallel.addActionListener(this);
+		seqBlur = new JButton("Sequential Blur");
+		seqBlur.addActionListener(this);
+		parallelBlur = new JButton("Parallel Blur");
+		parallelBlur.addActionListener(this);
 		buttonPanel.add(grayscaleButton);
 		buttonPanel.add(grayscaleButtonParallel);
+		buttonPanel.add(seqBlur);
+		buttonPanel.add(parallelBlur);
 		mainFrame.add(buttonPanel);
 		mainFrame.add(drawingPanel);
 		
@@ -225,6 +237,28 @@ public class Window implements ActionListener {
 				mainFrame.repaint();
 			}
 			else {	
+				JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
+			}
+		}
+		else if(ae.getSource() == seqBlur) {
+			long temp = handler.sequentialBlur();
+			if(temp > 0) {
+				long runTime = temp / 1000000;
+				timeLabel.setText("Sequential Blur Algorithm Time in milliseconds:\n" + runTime);
+				mainFrame.repaint();
+			}
+			else {
+				JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
+			}
+		}
+		else if(ae.getSource() == parallelBlur){
+			long temp = handler.parallelBlur();
+			if(temp > 0) {
+				long runTime = temp / 1000000;
+				timeLabel.setText("Parallel Blur Algorithm Time in milliseconds:\n" + runTime);
+				mainFrame.repaint();
+			}
+			else {
 				JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
 			}
 		}
