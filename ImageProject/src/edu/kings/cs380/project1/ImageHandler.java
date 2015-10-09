@@ -244,15 +244,19 @@ public class ImageHandler {
 	public long sequentialBlur() {
 		long returnValue = -1;
 		if(currentImage != null) {
+			long startTime = System.nanoTime();
 			int height = currentImage.getHeight();
 			int width = currentImage.getWidth();
 			int[] redValues = new int[height*width];
 			int[] greenValues = new int[height*width];
 			int[] blueValues = new int[height*width];
+			int[] redBlurred = new int[height*width];
+			int[] greenBlurred = new int[height*width];
+			int[] blueBlurred = new int[height * width];
 			int pixelCount = 0;
 			for(int row = 0 ; row < height ; row ++) {
 				for (int column = 0; column < width; column ++) {
-					Color c = new Color (currentImage.getRGB(column, row));
+					Color c = new Color(currentImage.getRGB(column, row));
 					int red = c. getRed();
 					int green = c.getGreen();
 					int blue = c. getBlue();
@@ -262,6 +266,38 @@ public class ImageHandler {
 					pixelCount++;
 				}
 			}
+			double[][] filter = createBlurFilter(5, 2);
+			for(int h = 0; h < height; h ++) {
+				for(int w = 0; w < width; w ++) {
+					int index = (h * width) + w;
+					int redBlur = 0;
+					int blueBlur = 0;
+					int greenBlur = 0;
+					for(int row = 0; row < 5; row ++) {
+						for(int col = 0; col < 5; col ++) {
+							int rowFixer = h - 2;
+							int colFixer = w - 2;
+							if(rowFixer >= 0 && colFixer >= 0){
+								int i = (rowFixer * width) + colFixer;
+								redBlur += redValues[i] * filter[row][col];
+								greenBlur += greenValues[i] * filter[row][col];
+								blueBlur += blueValues[i] * filter[row][col];
+							}
+						}
+					}
+					redBlurred[index] = redBlur;
+					greenBlurred[index] = greenBlur;
+					blueBlurred[index] = blueBlur;
+				}
+			}
+			for(int theHeight = 0; theHeight < height; theHeight ++) {
+				for(int theWidth = 0; theWidth < width; theWidth ++) {
+					int index = (theHeight * width) + theWidth;
+					Color c = new Color(redBlurred[index], greenBlurred[index], blueBlurred[index], 0xff);
+					currentImage.setRGB(theWidth, theHeight, c.getRGB());
+				}
+			}
+			returnValue = System.nanoTime() - startTime;
 		}
 		return returnValue;
 	}
@@ -344,5 +380,44 @@ public class ImageHandler {
 			e.printStackTrace();
 			return null;
 		}
+	}
+	
+	/**
+	 * Creates the filter for the blur function 
+	 * 
+	 * @param theBlurWidth
+	 * @param sigma
+	 * @return
+	 */
+	private double[][] createBlurFilter(int theBlurWidth, int sigma) {
+		int rowBlur = (-1 * (theBlurWidth)) / 2;
+		int colBlur = (-1 * (theBlurWidth)) / 2;
+		double[][] filter = new double[theBlurWidth][theBlurWidth];
+		double normalizeValue = 0;
+		for(int row = 0; row < filter.length; row ++) {
+			for(int col = 0; col < filter[row].length; col ++) {
+				double temp = gaussinFunction(rowBlur, colBlur, sigma);
+				filter[row][col] = temp;
+				normalizeValue += temp;
+				colBlur++;
+			}
+			colBlur = (-1 * (theBlurWidth)) / 2;
+			rowBlur ++;
+		}
+		for(int row = 0; row < filter.length; row ++) {
+			for(int col = 0; col < filter[row].length; col ++) {
+				filter[row][col] = filter[row][col] / normalizeValue;
+			}
+		}
+		return filter;
+	}
+	
+	private double gaussinFunction(int valueOne, int valueTwo, int theSigma) {
+		int sigma = 2;
+		double fixerOne = valueOne;
+		double fixerTwo = valueTwo;
+		double exponent = (-1 * ((fixerOne * fixerOne) + (fixerTwo * fixerTwo))) / (2 * (theSigma * theSigma));
+		double returnValue = Math.exp(exponent);
+		return returnValue;
 	}
 }
