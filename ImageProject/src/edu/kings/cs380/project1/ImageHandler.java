@@ -254,7 +254,7 @@ public class ImageHandler {
 			int[] greenBlurred = new int[height*width];
 			int[] blueBlurred = new int[height * width];
 			int pixelCount = 0;
-			for(int row = 0 ; row < height ; row ++) {
+			for(int row = 0; row < height; row++) {
 				for (int column = 0; column < width; column ++) {
 					Color c = new Color(currentImage.getRGB(column, row));
 					int red = c. getRed();
@@ -274,8 +274,8 @@ public class ImageHandler {
 					int blueBlur = 0;
 					int greenBlur = 0;
 					for(int row = 0; row < 5; row ++) {
+						int rowFixer = h - 2;
 						for(int col = 0; col < 5; col ++) {
-							int rowFixer = h - 2;
 							int colFixer = w - 2;
 							if(rowFixer >= 0 && colFixer >= 0){
 								int i = (rowFixer * width) + colFixer;
@@ -283,7 +283,9 @@ public class ImageHandler {
 								greenBlur += greenValues[i] * filter[row][col];
 								blueBlur += blueValues[i] * filter[row][col];
 							}
+							colFixer++;
 						}
+						rowFixer++;
 					}
 					redBlurred[index] = redBlur;
 					greenBlurred[index] = greenBlur;
@@ -293,8 +295,17 @@ public class ImageHandler {
 			for(int theHeight = 0; theHeight < height; theHeight ++) {
 				for(int theWidth = 0; theWidth < width; theWidth ++) {
 					int index = (theHeight * width) + theWidth;
-					Color c = new Color(redBlurred[index], greenBlurred[index], blueBlurred[index], 0xff);
-					currentImage.setRGB(theWidth, theHeight, c.getRGB());
+
+					int ALPHA_OFFSET = 24;
+				    int RED_OFFSET = 16;
+					int GREEN_OFFSET = 8;
+					int BLUE_OFFSET = 0;	
+					int resultColor = (0xff << ALPHA_OFFSET) |
+									  (redBlurred[index] << RED_OFFSET) |
+									  (greenBlurred[index] << GREEN_OFFSET) |
+									  (blueBlurred[index] << BLUE_OFFSET);
+					
+					currentImage.setRGB(theWidth, theHeight, resultColor);
 				}
 			}
 			returnValue = System.nanoTime() - startTime;
@@ -357,11 +368,37 @@ public class ImageHandler {
 					
 			CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memArrayA));
 			CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memRedResult));
-			CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memGreenResult));
-			CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memBlueResult));
+			CL.clSetKernelArg(kernel, 2, Sizeof.cl_mem, Pointer.to(memGreenResult));
+			CL.clSetKernelArg(kernel, 3, Sizeof.cl_mem, Pointer.to(memBlueResult));
 			
 			long[] globalWorkSize = new long[]{n};
 			long[] localWorkSize = new long[]{1};
+			
+			//Execute the kernel
+			long startTime = System.nanoTime();
+			CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+					0, null, null);
+				
+			//Read the output data
+			CL.clEnqueueReadBuffer(commandQueue, memRedResult, CL.CL_TRUE, 0, n * Sizeof.cl_float, 
+					ptrRedResult, 0, null, null);
+			
+			CL.clEnqueueReadBuffer(commandQueue, memGreenResult, CL.CL_TRUE, 0, n* Sizeof.cl_float,
+					ptrGreenResult, 0, null, null);
+			
+			CL.clEnqueueReadBuffer(commandQueue, memBlueResult, CL.CL_TRUE, 0, n* Sizeof.cl_float,
+					ptrBlueResult, 0, null, null);
+			long runTime = System.nanoTime() - startTime;
+			
+			CL.clReleaseKernel(kernel);
+			CL.clReleaseProgram(program);
+			CL.clReleaseMemObject(memArrayA);
+			CL.clReleaseMemObject(memRedResult);
+			CL.clReleaseMemObject(memGreenResult);
+			CL.clReleaseMemObject(memBlueResult);
+			
+			
+			
 		}
 		return returnValue;
 	}
