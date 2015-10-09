@@ -310,7 +310,58 @@ public class ImageHandler {
 	public long parallelBlur() {
 		long returnValue = -1;
 		if(currentImage != null) {
+			//Initialize the context properties	
+			cl_context_properties contextProperties = new cl_context_properties();
+			contextProperties.addProperty(CL.CL_CONTEXT_PLATFORM, selectedPlatform);
+					
+			//Create a context for the selected device
+			cl_context context = CL.clCreateContext(
+			contextProperties, 1,
+				new cl_device_id[]{selectedDevice},
+				null, null, null);		
 			
+					
+			//Create a command queue for the selected device
+			cl_command_queue commandQueue = CL.clCreateCommandQueue(context, selectedDevice, 0, null);
+
+			//Get Raster information for array
+			WritableRaster sourceRaster = currentImage.getRaster();
+			DataBuffer sourceDataBuffer = sourceRaster.getDataBuffer();
+			DataBufferInt sourceBytes = (DataBufferInt)sourceDataBuffer;
+			int sourceData[] = sourceBytes.getData();
+			int n = sourceData.length;
+			int[]redResult = new int[n];
+			int[]greenResult = new int[n];
+			int[]blueResult = new int[n];
+			
+			Pointer ptrArrayA = Pointer.to(sourceData);
+			Pointer ptrRedResult = Pointer.to(redResult);
+			Pointer ptrGreenResult = Pointer.to(greenResult);
+			Pointer ptrBlueResult = Pointer.to(blueResult);
+			
+			cl_mem memArrayA = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_float * n, ptrArrayA, null);
+			cl_mem memRedResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_float * n, ptrRedResult, null);
+			cl_mem memGreenResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_float * n, ptrGreenResult, null);
+			cl_mem memBlueResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_float * n, ptrBlueResult, null);
+			
+			String source = readFile("kernels/blur_array_setter.cl");
+			cl_program program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
+					
+			CL.clBuildProgram(program, 0, null, null, null, null);
+					
+			cl_kernel kernel = CL.clCreateKernel(program, "array_setter_kernel", null);
+					
+			CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memArrayA));
+			CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memRedResult));
+			CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memGreenResult));
+			CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memBlueResult));
+			
+			long[] globalWorkSize = new long[]{n};
+			long[] localWorkSize = new long[]{1};
 		}
 		return returnValue;
 	}
