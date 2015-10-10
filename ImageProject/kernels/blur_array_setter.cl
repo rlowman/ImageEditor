@@ -1,7 +1,7 @@
 __kernel void
 array_setter_kernel (__global const int * a,
-					__global int * red_result
-					__global int * green_result
+					__global int * red_result,
+					__global int * green_result,
 					__global int * blue_result )
 {
 const int ALPHA_MASK = 0xff000000;
@@ -17,7 +17,6 @@ int i = get_global_id(0);
 
 int pixel = a[i];
 
-int alpha = (pixel & ALPHA_MASK) >> ALPHA_OFFSET;
 int r = (pixel & RED_MASK) >> RED_OFFSET;
 int g = (pixel & GREEN_MASK) >> GREEN_OFFSET;
 int b = (pixel & BLUE_MASK) >> BLUE_OFFSET;

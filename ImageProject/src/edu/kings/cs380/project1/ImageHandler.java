@@ -237,7 +237,7 @@ public class ImageHandler {
 	}
 	
 	/**
-	 * Blurs the image using sequential computing
+	 * Blurs the image using sequential computing.
 	 * 
 	 * @return the time in nanoseconds
 	 */
@@ -267,29 +267,27 @@ public class ImageHandler {
 				}
 			}
 			double[][] filter = createBlurFilter(5, 2);
-			for(int h = 0; h < height; h ++) {
-				for(int w = 0; w < width; w ++) {
-					int index = (h * width) + w;
-					int redBlur = 0;
-					int blueBlur = 0;
-					int greenBlur = 0;
-					for(int row = 0; row < 5; row ++) {
-						int rowFixer = h - 2;
-						for(int col = 0; col < 5; col ++) {
-							int colFixer = w - 2;
-							if(rowFixer >= 0 && colFixer >= 0){
-								int i = (rowFixer * width) + colFixer;
-								redBlur += redValues[i] * filter[row][col];
-								greenBlur += greenValues[i] * filter[row][col];
-								blueBlur += blueValues[i] * filter[row][col];
-							}
-							colFixer++;
+			for(int row = 0; row < height; row ++) {
+				for(int col = 0; col < width; col ++) {
+					int index = (row * width) + col;
+					double redBlur = 0;
+					double blueBlur = 0;
+					double greenBlur = 0;
+					for(int filterRow = 0; filterRow < 5; filterRow ++) {
+						for(int filterCol = 0; filterCol < 5; filterCol ++) {
+							int r = row - filterRow - 2;
+							int c = col - filterCol - 2;
+							r = Math.max(0, Math.min(r, height));
+							c = Math.max(0, Math.min(c, width));
+							int i = (r * width) + c;
+							redBlur += redValues[i] * filter[filterRow][filterCol];
+							greenBlur += greenValues[i] * filter[filterRow][filterCol];
+							blueBlur += blueValues[i] * filter[filterRow][filterCol];
 						}
-						rowFixer++;
 					}
-					redBlurred[index] = redBlur;
-					greenBlurred[index] = greenBlur;
-					blueBlurred[index] = blueBlur;
+					redBlurred[index] = (int)redBlur;
+					greenBlurred[index] = (int)greenBlur;
+					blueBlurred[index] = (int)blueBlur;
 				}
 			}
 			for(int theHeight = 0; theHeight < height; theHeight ++) {
@@ -314,7 +312,7 @@ public class ImageHandler {
 	}
 	
 	/**
-	 * Blurs the image using parallel computing
+	 * Blurs the image using parallel computing.
 	 * 
 	 * @return the time in nanoseconds
 	 */
@@ -351,13 +349,13 @@ public class ImageHandler {
 			Pointer ptrBlueResult = Pointer.to(blueResult);
 			
 			cl_mem memArrayA = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
-					Sizeof.cl_float * n, ptrArrayA, null);
-			cl_mem memRedResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
-					Sizeof.cl_float * n, ptrRedResult, null);
-			cl_mem memGreenResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
-					Sizeof.cl_float * n, ptrGreenResult, null);
-			cl_mem memBlueResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
-					Sizeof.cl_float * n, ptrBlueResult, null);
+					Sizeof.cl_int * n, ptrArrayA, null);
+			cl_mem memRedResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * n, null, null);
+			cl_mem memGreenResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * n, null, null);
+			cl_mem memBlueResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * n, null, null);
 			
 			String source = readFile("kernels/blur_array_setter.cl");
 			cl_program program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
@@ -380,25 +378,152 @@ public class ImageHandler {
 					0, null, null);
 				
 			//Read the output data
-			CL.clEnqueueReadBuffer(commandQueue, memRedResult, CL.CL_TRUE, 0, n * Sizeof.cl_float, 
+			CL.clEnqueueReadBuffer(commandQueue, memRedResult, CL.CL_TRUE, 0, n * Sizeof.cl_int, 
 					ptrRedResult, 0, null, null);
 			
-			CL.clEnqueueReadBuffer(commandQueue, memGreenResult, CL.CL_TRUE, 0, n* Sizeof.cl_float,
+			CL.clEnqueueReadBuffer(commandQueue, memGreenResult, CL.CL_TRUE, 0, n* Sizeof.cl_int,
 					ptrGreenResult, 0, null, null);
 			
-			CL.clEnqueueReadBuffer(commandQueue, memBlueResult, CL.CL_TRUE, 0, n* Sizeof.cl_float,
+			CL.clEnqueueReadBuffer(commandQueue, memBlueResult, CL.CL_TRUE, 0, n* Sizeof.cl_int,
 					ptrBlueResult, 0, null, null);
 			long runTime = System.nanoTime() - startTime;
 			
+			//Start of second kernel
+			double[][] filter = createBlurFilter(5,2);
+			double[] paramFilter = new double[25];
+			int count = 0;
+			for(int i = 0; i < filter.length; i ++) {
+				for(int m = 0; m < filter[i].length; m ++) {
+					paramFilter[count] = filter[i][m];
+					count ++;
+				}
+			}
+			
+			int[]redBlurred = new int[n];
+			int[]blueBlurred = new int[n];
+			int[]greenBlurred = new int[n];
+			
+			int[]height = new int[]{currentImage.getHeight()};
+			int[]width = new int[]{currentImage.getWidth()};
+			
+			Pointer ptrFilter = Pointer.to(paramFilter);
+			Pointer ptrRedBlurred = Pointer.to(redBlurred);
+			Pointer ptrGreenBlurred = Pointer.to(greenBlurred);
+			Pointer ptrBlueBlurred = Pointer.to(blueBlurred);
+					
+			cl_mem ptrFilterArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_float * n, ptrFilter, null);
+			cl_mem memRedChannel = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL. CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_int * n, ptrRedResult, null);
+			cl_mem memGreenChannel = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL. CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_int * n, ptrGreenResult, null);
+			cl_mem memBlueChannel = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL. CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_int * n, ptrBlueResult, null);
+			cl_mem memRedBlurredResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * n, null, null);
+			cl_mem memGreenBlurredResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * n, null, null);
+			cl_mem memBlueBlurredResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * n, null, null);
+			
+			String theSource = readFile("kernels/parallel_blur_kernel.cl");
+			cl_program theProgram = CL.clCreateProgramWithSource(context, 1, new String[]{ theSource }, null, null);
+					
+			CL.clBuildProgram(theProgram, 0, null, null, null, null);
+					
+			cl_kernel blurKernel = CL.clCreateKernel(theProgram, "blur_kernel", null);
+					
+			CL.clSetKernelArg(blurKernel, 0, Sizeof.cl_mem, Pointer.to(ptrFilterArray));
+			CL.clSetKernelArg(blurKernel, 1, Sizeof.cl_mem, Pointer.to(memRedChannel));
+			CL.clSetKernelArg(blurKernel, 2, Sizeof.cl_mem, Pointer.to(memGreenChannel));
+			CL.clSetKernelArg(blurKernel, 3, Sizeof.cl_mem, Pointer.to(memBlueChannel));
+			CL.clSetKernelArg(blurKernel, 4, Sizeof.cl_mem, Pointer.to(memRedBlurredResult));
+			CL.clSetKernelArg(blurKernel, 5, Sizeof.cl_mem, Pointer.to(memGreenBlurredResult));
+			CL.clSetKernelArg(blurKernel, 6, Sizeof.cl_mem, Pointer.to(memBlueBlurredResult));
+			CL.clSetKernelArg(blurKernel, 7, Sizeof.cl_int, Pointer.to(width));
+			CL.clSetKernelArg(blurKernel, 8, Sizeof.cl_int, Pointer.to(height));
+			
+			long secondStartTime = System.nanoTime();
+			CL.clEnqueueNDRangeKernel(commandQueue, blurKernel, 1, null, globalWorkSize, localWorkSize,
+					0, null, null);
+				
+			//Read the output data
+			CL.clEnqueueReadBuffer(commandQueue, memRedBlurredResult, CL.CL_TRUE, 0, n * Sizeof.cl_int, 
+					ptrRedBlurred, 0, null, null);
+			
+			CL.clEnqueueReadBuffer(commandQueue, memGreenBlurredResult, CL.CL_TRUE, 0, n* Sizeof.cl_int,
+					ptrGreenBlurred, 0, null, null);
+			
+			CL.clEnqueueReadBuffer(commandQueue, memBlueBlurredResult, CL.CL_TRUE, 0, n* Sizeof.cl_int,
+					ptrBlueBlurred, 0, null, null);
+			runTime += System.nanoTime() - secondStartTime;
+			
+			int newRaster[] = new int[n];
+			
+			Pointer ptrRaster = Pointer.to(newRaster);
+			
+			cl_mem ptrRasterArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * n, null, null);
+			
+			cl_mem memRedBlurredChannel = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_int * n, ptrRedBlurred, null);
+			
+			cl_mem memGreenBlurredChannel = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_int * n, ptrGreenBlurred, null);
+			
+			cl_mem memBlueBlurredChannel = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_int * n, ptrBlueBlurred, null);
+			
+			String combineSource = readFile("kernels/array_combine_kernel.cl");
+			cl_program combineProgram = CL.clCreateProgramWithSource(context, 1, new String[]{ combineSource }, null, null);
+					
+			CL.clBuildProgram(combineProgram, 0, null, null, null, null);
+					
+			cl_kernel combineKernel = CL.clCreateKernel(combineProgram, "combine_kernel", null);
+					
+			CL.clSetKernelArg(combineKernel, 0, Sizeof.cl_mem, Pointer.to(ptrRasterArray));
+			CL.clSetKernelArg(combineKernel, 1, Sizeof.cl_mem, Pointer.to(memRedBlurredChannel));
+			CL.clSetKernelArg(combineKernel, 2, Sizeof.cl_mem, Pointer.to(memGreenBlurredChannel));
+			CL.clSetKernelArg(combineKernel, 3, Sizeof.cl_mem, Pointer.to(memBlueBlurredChannel));
+			
+			long thirdStartTime = System.nanoTime();
+			CL.clEnqueueNDRangeKernel(commandQueue, combineKernel, 1, null, globalWorkSize, localWorkSize,
+					0, null, null);
+				
+			//Read the output data
+			CL.clEnqueueReadBuffer(commandQueue, ptrRasterArray, CL.CL_TRUE, 0, n * Sizeof.cl_int, 
+					ptrRaster, 0, null, null);
+			runTime += System.nanoTime() - thirdStartTime;
+			
+			DataBufferInt resultDataBuffer = new DataBufferInt(newRaster, newRaster.length);
+			Raster resultRaster = Raster.createRaster(currentImage.getSampleModel(), resultDataBuffer, new Point(0, 0));
+			currentImage.setData(resultRaster);
+			
+			//Clean-up
 			CL.clReleaseKernel(kernel);
 			CL.clReleaseProgram(program);
 			CL.clReleaseMemObject(memArrayA);
 			CL.clReleaseMemObject(memRedResult);
 			CL.clReleaseMemObject(memGreenResult);
 			CL.clReleaseMemObject(memBlueResult);
-			
-			
-			
+			CL.clReleaseKernel(combineKernel);
+			CL.clReleaseProgram(combineProgram);
+			CL.clReleaseMemObject(memRedBlurredChannel);
+			CL.clReleaseMemObject(memGreenBlurredChannel);
+			CL.clReleaseMemObject(memBlueBlurredChannel);
+			CL.clReleaseMemObject(ptrRasterArray);
+			CL.clReleaseCommandQueue(commandQueue);
+			CL.clReleaseContext(context);
+			CL.clReleaseKernel(blurKernel);
+			CL.clReleaseProgram(theProgram);
+			CL.clReleaseMemObject(ptrFilterArray);
+			CL.clReleaseMemObject(memRedChannel);
+			CL.clReleaseMemObject(memGreenChannel);
+			CL.clReleaseMemObject(memBlueChannel);
+			CL.clReleaseMemObject(memRedBlurredResult);
+			CL.clReleaseMemObject(memGreenBlurredResult);
+			CL.clReleaseMemObject(memBlueBlurredResult);
+			returnValue = runTime;
 		}
 		return returnValue;
 	}
@@ -501,7 +626,6 @@ public class ImageHandler {
 	}
 	
 	private double gaussinFunction(int valueOne, int valueTwo, int theSigma) {
-		int sigma = 2;
 		double fixerOne = valueOne;
 		double fixerTwo = valueTwo;
 		double exponent = (-1 * ((fixerOne * fixerOne) + (fixerTwo * fixerTwo))) / (2 * (theSigma * theSigma));

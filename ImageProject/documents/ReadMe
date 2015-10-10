@@ -3,12 +3,18 @@ Overview: My program has the basic features any image software would have. The c
 first part of this project can be found in the file menu at the top of the screen. I have considered 
 the fact that more options besides grayscale will become available, which can be added at the bottom of the 
 grayscale button. The picture can be opened from a .png file, edited, then saved to the same file. The program has 
-two choices for grayscaling, using either parallel programming or sequential. 
+two choices for grayscaling, using either parallel programming or sequential. The program also has two choices for 
+blurring an image, also using either parallel or sequential. 
 
 File Types Supported: PNG
 
-Bugs: The only known limitation to this design so far is that there is no undo button. So, once an edit 
-like grayscale is committed, then the only way to reset it is to close the file and reopen it. This is a 
-simple fix , however it is not programmed at the time. 
+Bugs: Once again, a big fallback this program has is that you cannot undo any action, so any accidental move that needs
+to be fixed is requird to completly reload the picture, losing all progress made. Also, a major bug is that only 
+sequential blur works. When attempting to blur the image using parallelism, the image turns completely white. I attempted
+to debug this, and found that for some reason my blur kernel puts the max value of an int in each slot of all three color
+channels, so when combined in the last kernel, it makes the picture white-bright enough to burn your eyes out. I plan
+to implement the extras on the last two parts once i get parallel blur to work to maybe earn some points back since I 
+could not get all the parts to work properly on this phase.
 
-*My test cases were not complete as I could not get them to pass. I have commented them out to fix them later*
+*I activated checkstyle and it didnt give me any errors, so I'm guessing I didn't set it up right*
+

@@ -254,8 +254,7 @@ public class Window implements ActionListener {
 		else if(ae.getSource() == parallelBlur){
 			long temp = handler.parallelBlur();
 			if(temp > 0) {
-				long runTime = temp / 1000000;
-				timeLabel.setText("Parallel Blur Algorithm Time in milliseconds:\n" + runTime);
+				timeLabel.setText("Parallel Blur Algorithm Time in nanoseconds:\n" + temp);
 				mainFrame.repaint();
 			}
 			else {
