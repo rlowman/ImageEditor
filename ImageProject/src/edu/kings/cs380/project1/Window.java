@@ -83,6 +83,10 @@ public class Window implements ActionListener {
 	/**Button that blurs the image using parellel computing*/
 	private JButton parallelBlur;
 	
+	private JButton seqEqualization;
+	
+	private JButton parallelEqualization;
+	
 	/**HashMap of all the Devices.*/
 	private HashMap<cl_device_id, cl_platform_id> theDevices;
 	
@@ -152,10 +156,16 @@ public class Window implements ActionListener {
 		seqBlur.addActionListener(this);
 		parallelBlur = new JButton("Parallel Blur");
 		parallelBlur.addActionListener(this);
+		seqEqualization = new JButton("Sequential Equalization");
+		seqEqualization.addActionListener(this);
+		parallelEqualization = new JButton("Parallel Equalization");
+		parallelEqualization.addActionListener(this);
 		buttonPanel.add(grayscaleButton);
 		buttonPanel.add(grayscaleButtonParallel);
 		buttonPanel.add(seqBlur);
 		buttonPanel.add(parallelBlur);
+		buttonPanel.add(seqEqualization);
+		buttonPanel.add(parallelEqualization);
 		mainFrame.add(buttonPanel);
 		mainFrame.add(drawingPanel);
 		
@@ -255,6 +265,26 @@ public class Window implements ActionListener {
 			long temp = handler.parallelBlur();
 			if(temp > 0) {
 				timeLabel.setText("Parallel Blur Algorithm Time in nanoseconds:\n" + temp);
+				mainFrame.repaint();
+			}
+			else {
+				JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
+			}
+		}
+		else if(ae.getSource() == seqEqualization) {
+			long time = handler.sequentialEqualization();
+			if(time > 0) {
+				timeLabel.setText("Sequential Equalization time in milliseconds: " + time);
+				mainFrame.repaint();
+			}
+			else {
+				JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
+			}
+		}
+		else if(ae.getSource() == parallelEqualization) {
+			long time = handler.parallelEqualization();
+			if(time > 0) {
+				timeLabel.setText("Parallel Equalization time in milliseconds: " + time);
 				mainFrame.repaint();
 			}
 			else {

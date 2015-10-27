@@ -11,6 +11,10 @@ import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Random;
 import java.util.Scanner;
 
 import javax.imageio.ImageIO;
@@ -275,10 +279,10 @@ public class ImageHandler {
 					double greenBlur = 0;
 					for(int filterRow = 0; filterRow < 5; filterRow ++) {
 						for(int filterCol = 0; filterCol < 5; filterCol ++) {
-							int r = row - filterRow - 2;
-							int c = col - filterCol - 2;
-							r = Math.max(0, Math.min(r, height));
-							c = Math.max(0, Math.min(c, width));
+							int r = Math.abs(row - filterRow - 2);
+							int c = Math.abs(col - filterCol - 2);
+							r = Math.max(0, Math.min(r, height - 1));
+							c = Math.max(0, Math.min(c, width - 1));
 							int i = (r * width) + c;
 							redBlur += redValues[i] * filter[filterRow][filterCol];
 							greenBlur += greenValues[i] * filter[filterRow][filterCol];
@@ -390,11 +394,11 @@ public class ImageHandler {
 			
 			//Start of second kernel
 			double[][] filter = createBlurFilter(5,2);
-			double[] paramFilter = new double[25];
+			float[] paramFilter = new float[25];
 			int count = 0;
 			for(int i = 0; i < filter.length; i ++) {
 				for(int m = 0; m < filter[i].length; m ++) {
-					paramFilter[count] = filter[i][m];
+					paramFilter[count] = (float)filter[i][m];
 					count ++;
 				}
 			}
@@ -631,5 +635,129 @@ public class ImageHandler {
 		double exponent = (-1 * ((fixerOne * fixerOne) + (fixerTwo * fixerTwo))) / (2 * (theSigma * theSigma));
 		double returnValue = Math.exp(exponent);
 		return returnValue;
+	}
+
+	public long sequentialEqualization() {
+		long returnValue = -1;
+		if(currentImage != null){
+			long startTime = System.nanoTime();
+			int width = currentImage.getWidth();
+			int height = currentImage.getHeight();
+			int sourceData[] = new int[width * height];
+			for(int row = 0; row < height; row ++) {
+				for(int col = 0; col < width; col++) {
+					int index = (row * width) + col;
+					sourceData[index] = currentImage.getRGB(col, row); 
+					System.out.println(currentImage.getRGB(col, row));
+				}
+			}
+			HashMap<Integer, Integer> histogram = new HashMap<Integer, Integer>();
+			for(int count = 0; count <= 255; count ++) {
+				histogram.put(count, 0);
+			}
+			for(int i = 0; i < sourceData.length; i++) {
+				int colorValue = sourceData[i];
+				System.out.println(colorValue);
+				int temp = histogram.get(colorValue);
+				histogram.put(colorValue, temp);
+			}
+			HashMap<Integer, Integer> cuf = new HashMap<Integer, Integer>();
+			int ramp = 0;
+			int counter = 0;
+			for(Integer current : histogram.values()) {
+				ramp += current.intValue();
+				cuf.put(counter, ramp);
+				counter ++;
+			}
+			HashMap<Integer, Integer> feq = new HashMap<Integer, Integer>();
+			int feqValue = sourceData.length / 255;
+			Random rand = new Random();
+			int addition = rand.nextInt(256);
+			for(int j = 0; j <= 255; j ++) {
+				if(j == addition) {
+					feq.put(j, feqValue + 1);
+				}
+				else {
+					feq.put(j, feqValue);
+				}
+			}
+			HashMap<Integer, Integer> cufeq = new HashMap<Integer, Integer>();
+			int in = 0;
+			int theCounter = 0;
+			for(Integer tempInt : feq.values()) {
+				in += tempInt.intValue();
+				cufeq.put(in, theCounter);
+				theCounter ++;
+			}
+			HashMap<Integer, Integer> newHistogram = new HashMap<Integer, Integer>();
+			for(Integer level : histogram.keySet()) {
+				int ramped = cuf.get(level);
+				Integer output = cufeq.get(ramped);
+				if(output == null) {
+					int lessThan = ramped - 1;
+					int lessThanDifference = 1;
+					Integer lessThanFind = null;
+					int greaterThan = ramped + 1;
+					int greaterThanDifference = 1;
+					Integer greaterThanFind = null;
+					boolean lessThanDone = false;
+					while(!lessThanDone) {
+						if(lessThan < 0) {
+							lessThanDone = true;
+							lessThanDifference = Integer.MAX_VALUE;
+						}
+						else {
+							lessThanFind = cufeq.get(lessThan);
+							if(lessThanFind != null) {
+								lessThanDone = true;
+							}
+							else {
+								lessThan--;
+								lessThanDifference ++;
+							}
+						}
+					}
+					boolean greaterThanDone = false;
+					while(!greaterThanDone) {
+						if(greaterThan > sourceData.length) {
+							greaterThanDone = true;
+							greaterThanDifference = Integer.MAX_VALUE;
+						}
+						else {
+							lessThanFind = cufeq.get(greaterThan);
+							if(lessThanFind != null) {
+								lessThanDone = true;
+							}
+							else {
+								greaterThan++;
+								greaterThanDifference ++;
+							}
+						}
+					}
+					if(greaterThanDifference > lessThanDifference) {
+						output = lessThanFind;
+					}
+					else {
+						output = greaterThanFind;
+					}
+				}
+				newHistogram.put(level, output);
+			}
+			int[] modifiedRaster = new int[sourceData.length];
+			for(int c = 0; c < sourceData.length; c ++) {
+				Integer equalValue = newHistogram.get(c);
+				modifiedRaster[c] = equalValue.intValue();
+			}
+			returnValue = System.nanoTime() - startTime;
+			DataBufferInt resultDataBuffer = new DataBufferInt(modifiedRaster, modifiedRaster.length);
+			Raster resultRaster = Raster.createRaster(currentImage.getSampleModel(), resultDataBuffer, new Point(0, 0));
+			currentImage.setData(resultRaster);
+		}
+		return returnValue;
+	}
+
+	public long parallelEqualization() {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 }
