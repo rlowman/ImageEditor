@@ -639,17 +639,24 @@ public class ImageHandler {
 
 	public long sequentialEqualization() {
 		long returnValue = -1;
+		int ALPHA_MASK = 0xff000000;
+		int ALPHA_OFFSET = 24;
+		int RED_MASK = 0x00ff0000;
+		int RED_OFFSET = 16;
 		if(currentImage != null){
 			long startTime = System.nanoTime();
 			int width = currentImage.getWidth();
 			int height = currentImage.getHeight();
 			int sourceData[] = new int[width * height];
+			int alphaData[] = new int[width * height];
 			for(int row = 0; row < height; row ++) {
 				for(int col = 0; col < width; col++) {
 					int index = (row * width) + col;
-					Color c = new Color (currentImage.getRGB(col, row));
-					int red = c. getRed();
-					sourceData[index] = red;
+					int pixel = currentImage.getRGB(col, row);
+					int alpha = (pixel & ALPHA_MASK) >> ALPHA_OFFSET;
+					int r = (pixel & RED_MASK) >> RED_OFFSET;
+					sourceData[index] = r;
+					alphaData[index] = alpha;
 				}
 			}
 			int[] histogram = new int[256];
@@ -687,39 +694,27 @@ public class ImageHandler {
 			int[] newHistogram = new int[256];
 			for(int index = 0; index <= 255; index ++) {
 				int ramped = cuf[index];
-				int output = cufeq[index];
-				if(output != ramped) {
-					if(output < ramped){
-						int outputDifference = output - ramped;
-						int greaterThanIndex = index + 1;
-						int useIndex = greaterThanIndex;
-						boolean done = false;
-						while(!done) {
-							int tester = cufeq[greaterThanIndex];
-							if(tester >= ramped) {
-								done = true;
-							}
-							int diff = ramped - tester;
-						}
-					}
-					else if(output > ramped) {
-						
-					}
-					else {
-						
+				int closestIndex = 0;
+				int best = Math.abs(ramped - cufeq[0]);
+				for(int i = 1; i < cufeq.length; i ++) {
+					int temp = Math.abs(ramped - cufeq[i]);
+					if(temp < best) {
+						closestIndex = i; 
+						best = temp;
 					}
 				}
-				else {
-					
-				}
+				newHistogram[index] = closestIndex;
 			}
 			int[] modifiedRaster = new int[sourceData.length];
-			for(int c = 0; c < sourceData.length; c ++) {
-				int equalValue = newHistogram.get(c);
+			for(int c = 0; c < modifiedRaster.length; c ++) {
+				int checker = sourceData[c];
+				int equalValue = newHistogram[checker];
 				Color newColor = new Color(equalValue, equalValue, equalValue, 0xff);
 				modifiedRaster[c] = newColor.getRGB();
 			}
 			returnValue = System.nanoTime() - startTime;
+			System.out.println(width * height);
+			System.out.println(sourceData.length);
 			DataBufferInt resultDataBuffer = new DataBufferInt(modifiedRaster, modifiedRaster.length);
 			Raster resultRaster = Raster.createRaster(currentImage.getSampleModel(), resultDataBuffer, new Point(0, 0));
 			currentImage.setData(resultRaster);
@@ -728,7 +723,109 @@ public class ImageHandler {
 	}
 
 	public long parallelEqualization() {
-		// TODO Auto-generated method stub
-		return 0;
+		//Initialize the context properties	
+		cl_context_properties contextProperties = new cl_context_properties();
+		contextProperties.addProperty(CL.CL_CONTEXT_PLATFORM, selectedPlatform);
+				
+		//Create a context for the selected device
+		cl_context context = CL.clCreateContext(
+		contextProperties, 1,
+			new cl_device_id[]{selectedDevice},
+			null, null, null);		
+		
+				
+		//Create a command queue for the selected device
+		cl_command_queue commandQueue = CL.clCreateCommandQueue(context, selectedDevice, 0, null);
+
+		//Get Raster information for array
+		WritableRaster sourceRaster = currentImage.getRaster();
+		DataBuffer sourceDataBuffer = sourceRaster.getDataBuffer();
+		DataBufferInt sourceBytes = (DataBufferInt)sourceDataBuffer;
+		int sourceData[] = sourceBytes.getData();
+		int n = sourceData.length;
+		int[]result = new int[n];
+		
+		Pointer ptrArrayA = Pointer.to(sourceData);
+		Pointer ptrResult = Pointer.to(result);
+		
+		cl_mem memArrayA = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+				Sizeof.cl_int * n, ptrArrayA, null);
+		cl_mem memresult = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+				Sizeof.cl_int * n, null, null);
+		
+		String source = readFile("kernels/gray_values_kernel.cl");
+		cl_program program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
+				
+		CL.clBuildProgram(program, 0, null, null, null, null);
+				
+		cl_kernel kernel = CL.clCreateKernel(program, "gray_values", null);
+				
+		CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memArrayA));
+		CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memresult));
+		
+		long[] globalWorkSize = new long[]{n};
+		long[] localWorkSize = new long[]{1};
+		
+		//Execute the kernel
+		long startTime = System.nanoTime();
+		CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+				0, null, null);
+			
+		//Read the output data
+		CL.clEnqueueReadBuffer(commandQueue, memresult, CL.CL_TRUE, 0, n * Sizeof.cl_int, 
+				ptrResult, 0, null, null);
+		long returnValue = System.nanoTime() - startTime;
+		
+		long startTime2 = System.nanoTime();
+		int[] emptyHistogram = parallelArraySet(0, n, context, commandQueue);
+		
+		return returnValue;
+	}
+	
+	private int[] parallelSumScan(int[] array) {
+		int[] returnValue = new int[array.length];
+		
+		Pointer ptrArray = Pointer.to(returnValue);
+		
+		return returnValue;
+	}
+	
+	private int[] parallelArraySet(int setValue, int size, cl_context context, cl_command_queue commandQueue) {
+		int[] returnValue = new int[size];
+		int[] sizeArray = new int[]{setValue};
+		Pointer ptrArray = Pointer.to(returnValue);
+				
+		cl_mem memArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+				Sizeof.cl_int * size, ptrArray, null);
+
+				
+		//Create the program from the source code
+		//Create the OpenCL kernel from the program
+		String sourceFile = readFile("kernels/array_set.cl");
+		cl_program program = CL.clCreateProgramWithSource(context, 1, new String[]{ sourceFile }, null, null);
+				
+		//Build the program
+		CL.clBuildProgram(program, 0, null, null, null, null);
+				
+		//Create the kernel
+		cl_kernel kernel = CL.clCreateKernel(program, "set", null);
+				
+		//Set the arguments for the kernel
+		CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memArray));
+		CL.clSetKernelArg(kernel, 1, Sizeof.cl_int, Pointer.to(sizeArray));
+				
+		//Set the work−item dimensions
+		long[] globalWorkSize = new long[]{size};
+		long[] localWorkSize = new long[]{1};
+		
+		//Execute the kernel
+		CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+				0, null, null);
+				
+		//Read the output data
+		CL.clEnqueueReadBuffer(commandQueue, memArray, CL.CL_TRUE, 0, size * Sizeof.cl_int, 
+				ptrArray, 0, null, null);
+		
+		return returnValue;
 	}
 }
