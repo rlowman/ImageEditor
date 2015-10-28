@@ -647,106 +647,77 @@ public class ImageHandler {
 			for(int row = 0; row < height; row ++) {
 				for(int col = 0; col < width; col++) {
 					int index = (row * width) + col;
-					sourceData[index] = currentImage.getRGB(col, row); 
-					System.out.println(currentImage.getRGB(col, row));
+					Color c = new Color (currentImage.getRGB(col, row));
+					int red = c. getRed();
+					sourceData[index] = red;
 				}
 			}
-			HashMap<Integer, Integer> histogram = new HashMap<Integer, Integer>();
+			int[] histogram = new int[256];
 			for(int count = 0; count <= 255; count ++) {
-				histogram.put(count, 0);
+				histogram[count] = 0;
 			}
 			for(int i = 0; i < sourceData.length; i++) {
 				int colorValue = sourceData[i];
-				System.out.println(colorValue);
-				int temp = histogram.get(colorValue);
-				histogram.put(colorValue, temp);
+				histogram[colorValue] ++;
 			}
-			HashMap<Integer, Integer> cuf = new HashMap<Integer, Integer>();
+			int[] cuf = new int[256];
 			int ramp = 0;
-			int counter = 0;
-			for(Integer current : histogram.values()) {
-				ramp += current.intValue();
-				cuf.put(counter, ramp);
-				counter ++;
+			for(int k = 0; k <= 255; k ++) {
+				ramp += histogram[k];
+				cuf[k] = ramp;
 			}
-			HashMap<Integer, Integer> feq = new HashMap<Integer, Integer>();
+			int[] feq = new int[256];
 			int feqValue = sourceData.length / 255;
 			Random rand = new Random();
 			int addition = rand.nextInt(256);
 			for(int j = 0; j <= 255; j ++) {
 				if(j == addition) {
-					feq.put(j, feqValue + 1);
+					feq[j] = feqValue + 1;
 				}
 				else {
-					feq.put(j, feqValue);
+					feq[j] = feqValue;
 				}
 			}
-			HashMap<Integer, Integer> cufeq = new HashMap<Integer, Integer>();
+			int[] cufeq = new int[256];
 			int in = 0;
-			int theCounter = 0;
-			for(Integer tempInt : feq.values()) {
-				in += tempInt.intValue();
-				cufeq.put(in, theCounter);
-				theCounter ++;
+			for(int h = 0; h <= 255; h++) {
+				in += feq[h];
+				cufeq[h] = in;
 			}
-			HashMap<Integer, Integer> newHistogram = new HashMap<Integer, Integer>();
-			for(Integer level : histogram.keySet()) {
-				int ramped = cuf.get(level);
-				Integer output = cufeq.get(ramped);
-				if(output == null) {
-					int lessThan = ramped - 1;
-					int lessThanDifference = 1;
-					Integer lessThanFind = null;
-					int greaterThan = ramped + 1;
-					int greaterThanDifference = 1;
-					Integer greaterThanFind = null;
-					boolean lessThanDone = false;
-					while(!lessThanDone) {
-						if(lessThan < 0) {
-							lessThanDone = true;
-							lessThanDifference = Integer.MAX_VALUE;
-						}
-						else {
-							lessThanFind = cufeq.get(lessThan);
-							if(lessThanFind != null) {
-								lessThanDone = true;
+			int[] newHistogram = new int[256];
+			for(int index = 0; index <= 255; index ++) {
+				int ramped = cuf[index];
+				int output = cufeq[index];
+				if(output != ramped) {
+					if(output < ramped){
+						int outputDifference = output - ramped;
+						int greaterThanIndex = index + 1;
+						int useIndex = greaterThanIndex;
+						boolean done = false;
+						while(!done) {
+							int tester = cufeq[greaterThanIndex];
+							if(tester >= ramped) {
+								done = true;
 							}
-							else {
-								lessThan--;
-								lessThanDifference ++;
-							}
+							int diff = ramped - tester;
 						}
 					}
-					boolean greaterThanDone = false;
-					while(!greaterThanDone) {
-						if(greaterThan > sourceData.length) {
-							greaterThanDone = true;
-							greaterThanDifference = Integer.MAX_VALUE;
-						}
-						else {
-							lessThanFind = cufeq.get(greaterThan);
-							if(lessThanFind != null) {
-								lessThanDone = true;
-							}
-							else {
-								greaterThan++;
-								greaterThanDifference ++;
-							}
-						}
-					}
-					if(greaterThanDifference > lessThanDifference) {
-						output = lessThanFind;
+					else if(output > ramped) {
+						
 					}
 					else {
-						output = greaterThanFind;
+						
 					}
 				}
-				newHistogram.put(level, output);
+				else {
+					
+				}
 			}
 			int[] modifiedRaster = new int[sourceData.length];
 			for(int c = 0; c < sourceData.length; c ++) {
-				Integer equalValue = newHistogram.get(c);
-				modifiedRaster[c] = equalValue.intValue();
+				int equalValue = newHistogram.get(c);
+				Color newColor = new Color(equalValue, equalValue, equalValue, 0xff);
+				modifiedRaster[c] = newColor.getRGB();
 			}
 			returnValue = System.nanoTime() - startTime;
 			DataBufferInt resultDataBuffer = new DataBufferInt(modifiedRaster, modifiedRaster.length);
