@@ -782,14 +782,6 @@ public class ImageHandler {
 		return returnValue;
 	}
 	
-	private int[] parallelSumScan(int[] array) {
-		int[] returnValue = new int[array.length];
-		
-		Pointer ptrArray = Pointer.to(returnValue);
-		
-		return returnValue;
-	}
-	
 	private int[] parallelArraySet(int setValue, int size, cl_context context, cl_command_queue commandQueue) {
 		int[] returnValue = new int[size];
 		int[] sizeArray = new int[]{setValue};
@@ -828,4 +820,63 @@ public class ImageHandler {
 		
 		return returnValue;
 	}
+	
+	protected int[] blellochScan(int[] theArray){
+		//Initialize the context properties	
+		cl_context_properties contextProperties = new cl_context_properties();
+		contextProperties.addProperty(CL.CL_CONTEXT_PLATFORM, selectedPlatform);
+						
+		//Create a context for the selected device
+		cl_context context = CL.clCreateContext(
+		contextProperties, 1,
+					new cl_device_id[]{selectedDevice},
+					null, null, null);		
+				
+						
+		//Create a command queue for the selected device
+		cl_command_queue commandQueue = CL.clCreateCommandQueue(context, selectedDevice, 0, null);
+		
+		int size = theArray.length;
+		int[] returnValue = new int[size];
+		int[] sizeArray = new int[]{size};
+		Pointer ptrArray = Pointer.to(theArray);
+		Pointer ptrResultArray = Pointer.to(returnValue);
+				
+		cl_mem memArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+				Sizeof.cl_int * size, ptrArray, null);
+
+		cl_mem memResultArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+				Sizeof.cl_int * size, null, null);
+				
+		//Create the program from the source code
+		//Create the OpenCL kernel from the program
+		String sourceFile = readFile("kernels/blelloch_scan_kernel.cl");
+		cl_program program = CL.clCreateProgramWithSource(context, 1, new String[]{ sourceFile }, null, null);
+				
+		//Build the program
+		CL.clBuildProgram(program, 0, null, null, null, null);
+				
+		//Create the kernel
+		cl_kernel kernel = CL.clCreateKernel(program, "scan", null);
+				
+		//Set the arguments for the kernel
+		CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memArray));
+		CL.clSetKernelArg(kernel, 1, Sizeof.cl_int, Pointer.to(sizeArray));
+		CL.clSetKernelArg(kernel, 2, Sizeof.cl_int, Pointer.to(memResultArray));
+				
+		//Set the work−item dimensions
+		long[] globalWorkSize = new long[]{256};
+		long[] localWorkSize = new long[]{256};
+		
+		//Execute the kernel
+		CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+				0, null, null);
+				
+		//Read the output data
+		CL.clEnqueueReadBuffer(commandQueue, memResultArray, CL.CL_TRUE, 0, size * Sizeof.cl_int, 
+				ptrResultArray, 0, null, null);
+		
+		return returnValue;
+	}
+	
 }
