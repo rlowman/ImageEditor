@@ -5,5 +5,5 @@ __kernel void histogram(__global const int * source,
 
 	int value = source[i];
 	
-	result[value]++;
+	atomic_add( &(result[value]), 1);
 }

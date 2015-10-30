@@ -12,7 +12,7 @@ __kernel void adjust(__global const int * cuf,
 	for(int index = 1; index < 256; index ++) {
 		int test = abs(compare - cufeq[index]);
 		
-		if(test < best) {
+		if(test <= best) {
 			bestIndex = index;
 			best = test;
 		}
