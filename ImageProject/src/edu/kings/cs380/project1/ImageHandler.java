@@ -637,8 +637,8 @@ public class ImageHandler {
 		return returnValue;
 	}
 
-	public long sequentialEqualization() {
-		long returnValue = -1;
+	public double sequentialEqualization() {
+		double returnValue = -1;
 		int ALPHA_MASK = 0xff000000;
 		int ALPHA_OFFSET = 24;
 		int RED_MASK = 0x00ff0000;
@@ -712,9 +712,7 @@ public class ImageHandler {
 				Color newColor = new Color(equalValue, equalValue, equalValue, 0xff);
 				modifiedRaster[c] = newColor.getRGB();
 			}
-			returnValue = System.nanoTime() - startTime;
-			System.out.println(width * height);
-			System.out.println(sourceData.length);
+			returnValue = System.nanoTime() - startTime;;
 			DataBufferInt resultDataBuffer = new DataBufferInt(modifiedRaster, modifiedRaster.length);
 			Raster resultRaster = Raster.createRaster(currentImage.getSampleModel(), resultDataBuffer, new Point(0, 0));
 			currentImage.setData(resultRaster);
@@ -722,7 +720,7 @@ public class ImageHandler {
 		return returnValue;
 	}
 
-	public long parallelEqualization() {
+	public double parallelEqualization() {
 		//Initialize the context properties	
 		cl_context_properties contextProperties = new cl_context_properties();
 		contextProperties.addProperty(CL.CL_CONTEXT_PLATFORM, selectedPlatform);
@@ -767,14 +765,14 @@ public class ImageHandler {
 		long[] localWorkSize = new long[]{1};
 		
 		//Execute the kernel
-		long startTime = System.nanoTime();
+		double startTime = System.nanoTime();
 		CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
 				0, null, null);
 			
 		//Read the output data
 		CL.clEnqueueReadBuffer(commandQueue, memResult, CL.CL_TRUE, 0, n * Sizeof.cl_int, 
 				ptrResult, 0, null, null);
-		long returnValue = System.nanoTime() - startTime;
+		double returnValue = System.nanoTime() - startTime;
 		
 		long startTime2 = System.nanoTime();
 		int[] histogram = parallelArraySet(0, 256, context, commandQueue);
@@ -811,8 +809,7 @@ public class ImageHandler {
 		returnValue += System.nanoTime() - startTime3;
 		
 		int[] cuf = blellochScan(histogram, context, commandQueue);
-		
-//		printArray(cuf);
+
 		int feqValue = n/256;
 		
 		int[] feq = parallelArraySet(feqValue, 256, context, commandQueue);
@@ -887,37 +884,48 @@ public class ImageHandler {
 				ptrNewRaster, 0, null, null);
 		returnValue += System.nanoTime() - startTime5;
 		
-		printArray(newRaster);
 		
-		int[] finalRaster = new int[n];
-		Pointer ptrFinalRaster = Pointer.to(finalRaster);
+//		int[] finalRaster = new int[n];
+//		Pointer ptrFinalRaster = Pointer.to(finalRaster);
+//		
+//		cl_mem memNewRasterInput = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+//				Sizeof.cl_int * n, ptrNewRaster, null);
+//		cl_mem memFinalRaster = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+//				Sizeof.cl_int * n, null, null);
+//		
+//		source = readFile("kernels/array_color_adjust.cl");
+//		program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
+//		
+//		CL.clBuildProgram(program, 0, null, null, null, null);
+//				
+//		kernel = CL.clCreateKernel(program, "color_adjust", null);
+//		
+//		CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memNewRasterInput));
+//		CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memFinalRaster));
+//		
+//
+//		long startTime6 = System.nanoTime();
+//		CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+//				0, null, null);
+//			
+//		//Read the output data
+//		CL.clEnqueueReadBuffer(commandQueue, memFinalRaster, CL.CL_TRUE, 0, n * Sizeof.cl_int, 
+//				ptrFinalRaster, 0, null, null);
+//		returnValue += System.nanoTime() - startTime6;
+//		
+//		DataBufferInt resultDataBuffer = new DataBufferInt(finalRaster, finalRaster.length);
+//		Raster resultRaster = Raster.createRaster(currentImage.getSampleModel(), resultDataBuffer, new Point(0, 0));
+//		currentImage.setData(resultRaster);
 		
-		cl_mem memNewRasterInput = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
-				Sizeof.cl_int * n, ptrNewRaster, null);
-		cl_mem memFinalRaster = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
-				Sizeof.cl_int * n, null, null);
-		
-		source = readFile("kernels/array_color_adjust.cl");
-		program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
-		
-		CL.clBuildProgram(program, 0, null, null, null, null);
-				
-		kernel = CL.clCreateKernel(program, "color_adjust", null);
-		
-		CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memNewRasterInput));
-		CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memFinalRaster));
-		
-
-		long startTime6 = System.nanoTime();
-		CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
-				0, null, null);
-			
-		//Read the output data
-		CL.clEnqueueReadBuffer(commandQueue, memFinalRaster, CL.CL_TRUE, 0, n * Sizeof.cl_int, 
-				ptrFinalRaster, 0, null, null);
-		returnValue += System.nanoTime() - startTime6;
-		
-		DataBufferInt resultDataBuffer = new DataBufferInt(finalRaster, finalRaster.length);
+		int[] modifiedRaster = new int[sourceData.length];
+		for(int c = 0; c < modifiedRaster.length; c ++) {
+			int checker = result[c];
+			int equalValue = newHistogram[checker];
+			Color newColor = new Color(equalValue, equalValue, equalValue, 0xff);
+			modifiedRaster[c] = newColor.getRGB();
+		}
+		returnValue = System.nanoTime() - startTime;
+		DataBufferInt resultDataBuffer = new DataBufferInt(modifiedRaster, modifiedRaster.length);
 		Raster resultRaster = Raster.createRaster(currentImage.getSampleModel(), resultDataBuffer, new Point(0, 0));
 		currentImage.setData(resultRaster);
 		
@@ -1031,11 +1039,5 @@ public class ImageHandler {
 		CL.clReleaseKernel(theKernel);
 		CL.clReleaseProgram(program);
 		return returnValue;
-	}
-	
-	private void printArray(int[] array) {
-		for(int i = 0; i < array.length; i++) {
-			System.out.print(array[i] + " ");
-		}
 	}
 }

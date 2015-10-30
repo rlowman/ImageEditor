@@ -272,9 +272,9 @@ public class Window implements ActionListener {
 			}
 		}
 		else if(ae.getSource() == seqEqualization) {
-			long time = handler.sequentialEqualization();
+			double time = handler.sequentialEqualization();
 			if(time > 0) {
-				timeLabel.setText("Sequential Equalization time in milliseconds: " + time);
+				timeLabel.setText("Sequential Equalization ms: " + time);
 				mainFrame.repaint();
 			}
 			else {
@@ -282,9 +282,9 @@ public class Window implements ActionListener {
 			}
 		}
 		else if(ae.getSource() == parallelEqualization) {
-			long time = handler.parallelEqualization();
+			double time = handler.parallelEqualization() / 1000000;
 			if(time > 0) {
-				timeLabel.setText("Parallel Equalization time in milliseconds: " + time);
+				timeLabel.setText("Parallel Equalization ms: " + time + " ms");
 				mainFrame.repaint();
 			}
 			else {

@@ -4,17 +4,21 @@ first part of this project can be found in the file menu at the top of the scree
 the fact that more options besides grayscale will become available, which can be added at the bottom of the 
 grayscale button. The picture can be opened from a .png file, edited, then saved to the same file. The program has 
 two choices for grayscaling, using either parallel programming or sequential. The program also has two choices for 
-blurring an image, also using either parallel or sequential. 
+blurring an image, also using either parallel or sequential. Equalization was implemented and also has the option to 
+either choose parallel or sequantial computting.
 
 File Types Supported: PNG
 
 Bugs: Once again, a big fallback this program has is that you cannot undo any action, so any accidental move that needs
-to be fixed is requird to completly reload the picture, losing all progress made. Also, a major bug is that only 
-sequential blur works. When attempting to blur the image using parallelism, the image turns completely white. I attempted
-to debug this, and found that for some reason my blur kernel puts the max value of an int in each slot of all three color
-channels, so when combined in the last kernel, it makes the picture white-bright enough to burn your eyes out. I plan
-to implement the extras on the last two parts once i get parallel blur to work to maybe earn some points back since I 
-could not get all the parts to work properly on this phase.
+to be fixed is requird to completly reload the picture, losing all progress made. 
 
-*I activated checkstyle and it didnt give me any errors, so I'm guessing I didn't set it up right*
+The parallel equalization isn't necessarily all parallel. One kernel, the kernel that creates the modified list of 
+grayscale values from the input/output histogram, pretty much the last step, does not work. This is very annoying since 
+this is a simple kernel and is probably a very stupid error I am making, however I cannot seem to debug it. One loop
+was added to do this part sequentially and the picture is equalized fine.
+
+Also, I noticed that parallel takes a much longer time than sequential, so we should probably talk about that on Monday
+too.
+
+
 
