@@ -782,6 +782,8 @@ public class ImageHandler {
 		
 		Pointer ptrHistogram = Pointer.to(histogram);
 		
+		cl_mem memResultInput = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+				Sizeof.cl_int * n, ptrResult, null);
 		cl_mem memHistogram = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
 				Sizeof.cl_int * n, null, null);
 		
@@ -792,7 +794,7 @@ public class ImageHandler {
 				
 		kernel = CL.clCreateKernel(program, "histogram", null);
 				
-		CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memResult));
+		CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memResultInput));
 		CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memHistogram));
 		
 		globalWorkSize = new long[]{n};
@@ -854,7 +856,55 @@ public class ImageHandler {
 				ptrNewHistogram, 0, null, null);
 		returnValue += System.nanoTime() - startTime4;
 		
+		int[] newRaster = new int[n];
 		
+		Pointer ptrNewRaster = Pointer.to(newRaster);
+		
+		cl_mem memSource = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+				Sizeof.cl_int * n, ptrResult, null);
+		cl_mem memInputHistogram = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+				Sizeof.cl_int * n, ptrNewRaster, null);
+		cl_mem memNewRaster = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+				Sizeof.cl_int * n, null, null);
+		
+		source = readFile("kernels/create_raster_kernel.cl");
+		program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
+		
+		CL.clBuildProgram(program, 0, null, null, null, null);
+				
+		kernel = CL.clCreateKernel(program, "create_raster", null);
+		
+		CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memSource));
+		CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memInputHistogram));
+		CL.clSetKernelArg(kernel, 2, Sizeof.cl_mem, Pointer.to(memNewRaster));
+		
+		long startTime5 = System.nanoTime();
+		CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+				0, null, null);
+			
+		//Read the output data
+		CL.clEnqueueReadBuffer(commandQueue, memNewRaster, CL.CL_TRUE, 0, n * Sizeof.cl_int, 
+				ptrNewRaster, 0, null, null);
+		returnValue += System.nanoTime() - startTime5;
+		
+		DataBufferInt resultDataBuffer = new DataBufferInt(newRaster, newRaster.length);
+		Raster resultRaster = Raster.createRaster(currentImage.getSampleModel(), resultDataBuffer, new Point(0, 0));
+		currentImage.setData(resultRaster);
+		
+		CL.clReleaseKernel(kernel);
+		CL.clReleaseMemObject(memArrayA);
+		CL.clReleaseMemObject(memResult);
+		CL.clReleaseProgram(program);
+		CL.clReleaseMemObject(memResultInput);
+		CL.clReleaseMemObject(memHistogram);
+		CL.clReleaseContext(context);
+		CL.clReleaseCommandQueue(commandQueue);
+		CL.clReleaseMemObject(memCuf);
+		CL.clReleaseMemObject(memCufeq);
+		CL.clReleaseMemObject(memNewHistogram);
+		CL.clReleaseMemObject(memSource);
+		CL.clReleaseMemObject(memInputHistogram);
+		CL.clReleaseMemObject(memNewRaster);
 		
 		return returnValue;
 	}
@@ -865,9 +915,8 @@ public class ImageHandler {
 		Pointer ptrArray = Pointer.to(returnValue);
 				
 		cl_mem memArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
-				Sizeof.cl_int * size, ptrArray, null);
+				Sizeof.cl_int * size, null, null);
 
-				
 		//Create the program from the source code
 		//Create the OpenCL kernel from the program
 		String sourceFile = readFile("kernels/array_set.cl");
@@ -895,7 +944,8 @@ public class ImageHandler {
 		CL.clEnqueueReadBuffer(commandQueue, memArray, CL.CL_TRUE, 0, size * Sizeof.cl_int, 
 				ptrArray, 0, null, null);
 		
-		
+		CL.clReleaseMemObject(memArray);
+		CL.clReleaseKernel(kernel);
 		return returnValue;
 	}
 	
@@ -906,7 +956,7 @@ public class ImageHandler {
 		Pointer ptrArray = Pointer.to(theArray);
 		Pointer ptrResultArray = Pointer.to(returnValue);
 				
-		cl_mem memArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+		cl_mem memArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
 				Sizeof.cl_int * size, ptrArray, null);
 
 		cl_mem memResultArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
@@ -940,6 +990,9 @@ public class ImageHandler {
 		CL.clEnqueueReadBuffer(commandQueue, memResultArray, CL.CL_TRUE, 0, size * Sizeof.cl_int, 
 				ptrResultArray, 0, null, null);
 		
+		CL.clReleaseMemObject(memArray);
+		CL.clReleaseMemObject(memResultArray);
+		CL.clReleaseKernel(kernel);
 		return returnValue;
 	}
 	
