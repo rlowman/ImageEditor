@@ -853,8 +853,6 @@ public class ImageHandler {
 				ptrNewHistogram, 0, null, null);
 		returnValue += System.nanoTime() - startTime4;
 		
-		printArray(newHistogram);
-		
 		int[] newRaster = new int[n];
 		
 		Pointer ptrNewRaster = Pointer.to(newRaster);
