@@ -741,7 +741,14 @@ public class ImageHandler {
 		DataBufferInt sourceBytes = (DataBufferInt)sourceDataBuffer;
 		int sourceData[] = sourceBytes.getData();
 		int n = sourceData.length;
-		int[]result = new int[n];
+		int[]result = new int[(n / 4) * 256];
+		int height = currentImage.getHeight();
+		int width = currentImage.getWidth();
+		int[] heightArray = new int[]{height};
+		int[] widthArray = new int[]{width};
+		int k = Math.min((height/100),(width/100));
+		int[] kArray = new int[]{k};
+		int[] histogramSizeArray = new int[]{256}; 
 		
 		Pointer ptrArrayA = Pointer.to(sourceData);
 		Pointer ptrResult = Pointer.to(result);
@@ -793,10 +800,12 @@ public class ImageHandler {
 		kernel = CL.clCreateKernel(program, "histogram", null);
 				
 		CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memResultInput));
-		CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memHistogram));
+		CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(heightArray));
+		CL.clSetKernelArg(kernel, 2, Sizeof.cl_mem, Pointer.to(widthArray));
+		CL.clSetKernelArg(kernel, 3, Sizeof.cl_mem, Pointer.to(memHistogram));
 		
-		globalWorkSize = new long[]{n};
-		localWorkSize = new long[]{1};
+		globalWorkSize = new long[]{height * width};
+		localWorkSize = new long[]{2*2};
 		
 		//Execute the kernel
 		long startTime3 = System.nanoTime();
