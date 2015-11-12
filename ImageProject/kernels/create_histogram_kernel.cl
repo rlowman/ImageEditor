@@ -13,10 +13,13 @@ __kernel void histogram(__global const int * source,
 	int index = (row * K) + col;
 	int the_row = (source_corner_row + row);
 	int the_col = (source_corner_col + col);
+	
 	if(the_row <= width | the_col <= height) {
 		int source_index = (source_corner_row + row) * SIZE + (source_corner_col + col);
-		tile[index] = source[];
-		barrier(CLK_LOCAL_MEM_FENCE);
+		tile[index] = source[source_index];
+	}
+	barrier(CLK_LOCAL_MEM_FENCE);
+	
 		
 		int value = tile[index];
 		local_histogram[value] ++;

@@ -749,11 +749,9 @@ public class ImageHandler {
 		int[] heightArray = new int[]{height};
 		int[] widthArray = new int[]{width};
 		int[] kArray = new int[]{k};
-		int[] histogramSizeArray = new int[]{256}; 
 		
 		Pointer ptrArrayA = Pointer.to(sourceData);
 		Pointer ptrResult = Pointer.to(result);
-		Pointer ptrCollection = Pointer.to(collection);
 		
 		cl_mem memArrayA = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
 				Sizeof.cl_int * n, ptrArrayA, null);
@@ -808,7 +806,7 @@ public class ImageHandler {
 		CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memResultInput));
 		CL.clSetKernelArg(kernel, 1, Sizeof.cl_int, Pointer.to(heightArray));
 		CL.clSetKernelArg(kernel, 2, Sizeof.cl_int, Pointer.to(widthArray));
-		CL.clSetKernelArg(kernel, 3, Sizeof.cl_mem, );
+		CL.clSetKernelArg(kernel, 3, Sizeof.cl_int * (k*k), null);
 		CL.clSetKernelArg(kernel, 4, Sizeof.cl_int, Pointer.to(kArray));
 		CL.clSetKernelArg(kernel, 5, Sizeof.cl_mem, Pointer.to(memCollectionHistogram));
 		

@@ -282,9 +282,10 @@ public class Window implements ActionListener {
 			}
 		}
 		else if(ae.getSource() == parallelEqualization) {
-			double time = handler.parallelEqualization() / 1000000;
+			double time = handler.parallelEqualization();
 			if(time > 0) {
-				timeLabel.setText("Parallel Equalization ms: " + time + " ms");
+				double ms = time / 1000000;
+				timeLabel.setText("Parallel Equalization ms: " + ms + " ms");
 				mainFrame.repaint();
 			}
 			else {
