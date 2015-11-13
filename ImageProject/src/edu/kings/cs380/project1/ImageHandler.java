@@ -721,6 +721,7 @@ public class ImageHandler {
 	}
 
 	public double parallelEqualization() {
+		
 		//Initialize the context properties	
 		cl_context_properties contextProperties = new cl_context_properties();
 		contextProperties.addProperty(CL.CL_CONTEXT_PLATFORM, selectedPlatform);
@@ -743,12 +744,20 @@ public class ImageHandler {
 		int n = sourceData.length;
 		int height = currentImage.getHeight();
 		int width = currentImage.getWidth();
-		int k = Math.min((height/100),(width/100));
-		int[] collection = new int[(n / (k * k)) * 256];
+		int k = 16;
 		int[] result = new int[n];
 		int[] heightArray = new int[]{height};
 		int[] widthArray = new int[]{width};
 		int[] kArray = new int[]{k};
+		
+		int globalHeight = height;
+		int globalWidth = width;
+		while(globalHeight % k != 0) {
+			globalHeight++;
+		}
+		while(globalWidth % k != 0) {
+			globalWidth ++;
+		}
 		
 		Pointer ptrArrayA = Pointer.to(sourceData);
 		Pointer ptrResult = Pointer.to(result);
@@ -782,19 +791,15 @@ public class ImageHandler {
 		double returnValue = System.nanoTime() - startTime;
 		
 		long startTime2 = System.nanoTime();
-		int[] histogram = parallelArraySet(0, 256, context, commandQueue);
-		int[] tile = new int[k * k]; 
 		returnValue += System.nanoTime() - startTime2;
 		
-		Pointer ptrHistogram = Pointer.to(histogram);
-		Pointer ptrTile = Pointer.to(tile);
+		int[] collection = new int[(n / (k * k)) * 256];
+		Pointer ptrCollection = Pointer.to(collection);
 		
 		cl_mem memResultInput = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
 				Sizeof.cl_int * n, ptrResult, null);
 		cl_mem memCollectionHistogram = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
 				Sizeof.cl_int * collection.length, null, null);
-		cl_mem memTile= CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
-				Sizeof.cl_int * (k * k), null, null);
 		
 		source = readFile("kernels/create_histogram_kernel.cl");
 		program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
@@ -807,11 +812,10 @@ public class ImageHandler {
 		CL.clSetKernelArg(kernel, 1, Sizeof.cl_int, Pointer.to(heightArray));
 		CL.clSetKernelArg(kernel, 2, Sizeof.cl_int, Pointer.to(widthArray));
 		CL.clSetKernelArg(kernel, 3, Sizeof.cl_int * (k*k), null);
-		CL.clSetKernelArg(kernel, 4, Sizeof.cl_int, Pointer.to(kArray));
-		CL.clSetKernelArg(kernel, 5, Sizeof.cl_mem, Pointer.to(memCollectionHistogram));
+		CL.clSetKernelArg(kernel, 4, Sizeof.cl_mem, Pointer.to(memCollectionHistogram));
 		
-		globalWorkSize = new long[]{height * width};
-		localWorkSize = new long[]{2*2};
+		globalWorkSize = new long[]{globalWidth * globalHeight};
+		localWorkSize = new long[]{k * k};
 		
 		//Execute the kernel
 		long startTime3 = System.nanoTime();
@@ -820,12 +824,53 @@ public class ImageHandler {
 			
 		//Read the output data
 		CL.clEnqueueReadBuffer(commandQueue, memCollectionHistogram, CL.CL_TRUE, 0, 256 * Sizeof.cl_int, 
-				ptrHistogram, 0, null, null);
+				ptrCollection, 0, null, null);
 		returnValue += System.nanoTime() - startTime3;
 		
-		printArray(collection);
+		int[] resultHistogram = new int[256];
 		
-		int[] cuf = blellochScan(histogram, context, commandQueue);
+		for(int j = 0; j < 256; j ++) {
+			int value = 0;
+			for(int h = 0; h < globalHeight / 16; h ++) {
+				int index = (h * globalWidth / 16) + j;
+				value += collection[index];
+			}
+			resultHistogram[j] = value;
+		}
+		
+//		Pointer ptrResultHistogram = Pointer.to(resultHistogram);
+//		
+//		cl_mem memResultHistogram = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+//				Sizeof.cl_int * 256, null, null);
+//		
+//		source = readFile("kernels/collection_combine.cl");
+//		program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
+//				
+//		CL.clBuildProgram(program, 0, null, null, null, null);
+//				
+//		kernel = CL.clCreateKernel(program, "collection_combine_kernel", null);
+//				
+//		CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memCollectionHistogram));
+//		CL.clSetKernelArg(kernel, 1, Sizeof.cl_int, Pointer.to(heightArray));
+//		CL.clSetKernelArg(kernel, 2, Sizeof.cl_int, Pointer.to(widthArray));
+//		CL.clSetKernelArg(kernel, 3, Sizeof.cl_mem, Pointer.to(memResultHistogram));
+//		
+//		globalWorkSize = new long[]{n};
+//		localWorkSize = new long[]{1};
+//		
+//		//Execute the kernel
+//		long startTime7 = System.nanoTime();
+//		CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+//				0, null, null);
+//			
+//		//Read the output data
+//		CL.clEnqueueReadBuffer(commandQueue, memResultHistogram, CL.CL_TRUE, 0, 256 * Sizeof.cl_int, 
+//				ptrResultHistogram, 0, null, null);
+//		returnValue += System.nanoTime() - startTime7;
+//		
+		printArray(resultHistogram);
+		
+		int[] cuf = blellochScan(resultHistogram, context, commandQueue);
 
 		int feqValue = n/256;
 		
