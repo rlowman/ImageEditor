@@ -820,11 +820,9 @@ public class ImageHandler {
 				0, null, null);
 			
 		//Read the output data
-		CL.clEnqueueReadBuffer(commandQueue, memCollectionHistogram, CL.CL_TRUE, 0, 256 * Sizeof.cl_int, 
+		CL.clEnqueueReadBuffer(commandQueue, memCollectionHistogram, CL.CL_TRUE, 0, collection.length * Sizeof.cl_int, 
 				ptrCollection, 0, null, null);
 		long returnValue = System.nanoTime() - startTime;
-		
-//		printArray(collection);
 		
 		int[] resultHistogram = new int[256];
 		

@@ -17,8 +17,14 @@ grayscale values from the input/output histogram, pretty much the last step, doe
 this is a simple kernel and is probably a very stupid error I am making, however I cannot seem to debug it. One loop
 was added to do this part sequentially and the picture is equalized fine.
 
-Also, I noticed that parallel takes a much longer time than sequential, so we should probably talk about that on Monday
-too.
+										*UPDATE PHASE 5*
+I could not get my optimized algorithm to produce a correct histogram and theres probably a couple reasons why. First,
+i'll explain the strategy I planned to use. The only size tile that would work for this algorithm is 16*16, and we can
+now use to local index to place the value of that index in the correct place in the collection of histograms. Therefore,
+we have to have a global and local work group size that can work for this. To make sure htis works, I created a new variable
+that I would use as the global width and global height that is the next hightest number divisible by 16 for both the height
+and weight of the actual image. Essentially, I want my kernel to scan more than the image is and discard any indexes that
+are overhanging the picture. Once I had this, I had all my parameters for the kernel that I was optimizing. 
 
 
 
