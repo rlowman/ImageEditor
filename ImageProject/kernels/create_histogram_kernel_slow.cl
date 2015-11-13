@@ -1,4 +1,4 @@
-__kernel void histogram(__global const int * source,
+__kernel void histogram_slow(__global const int * source,
 						__global int * result) {
 						
 	int i = get_global_id(0);

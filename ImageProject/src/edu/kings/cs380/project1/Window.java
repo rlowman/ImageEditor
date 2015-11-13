@@ -11,13 +11,13 @@ import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButtonMenuItem;
+import javax.swing.JTextArea;
 
 import org.jocl.CL;
 import org.jocl.cl_device_id;
@@ -60,7 +60,7 @@ public class Window implements ActionListener {
 	private JMenuItem close;
 	
 	/**Label that states the time of each processing algorithm.*/
-	private JLabel timeLabel;
+	private JTextArea timeLabel;
 	
 	/**File menu of the program.*/
 	private JMenu file; 
@@ -86,6 +86,8 @@ public class Window implements ActionListener {
 	private JButton seqEqualization;
 	
 	private JButton parallelEqualization;
+	
+	private JButton optimized;
 	
 	/**HashMap of all the Devices.*/
 	private HashMap<cl_device_id, cl_platform_id> theDevices;
@@ -160,16 +162,20 @@ public class Window implements ActionListener {
 		seqEqualization.addActionListener(this);
 		parallelEqualization = new JButton("Parallel Equalization");
 		parallelEqualization.addActionListener(this);
+		optimized = new JButton("Optimized Parallel E.");
+		optimized.addActionListener(this);
 		buttonPanel.add(grayscaleButton);
 		buttonPanel.add(grayscaleButtonParallel);
 		buttonPanel.add(seqBlur);
 		buttonPanel.add(parallelBlur);
 		buttonPanel.add(seqEqualization);
 		buttonPanel.add(parallelEqualization);
+		buttonPanel.add(optimized);
 		mainFrame.add(buttonPanel);
 		mainFrame.add(drawingPanel);
 		
-		timeLabel = new JLabel("Time Label");
+		timeLabel = new JTextArea("Time Label");
+		timeLabel.setEditable(false);
 		buttonPanel.add(timeLabel);
 		
 		deviceGroup = new ButtonGroup();
@@ -282,10 +288,21 @@ public class Window implements ActionListener {
 			}
 		}
 		else if(ae.getSource() == parallelEqualization) {
+			double time = handler.UnoptimizedParallelEqualization();
+			if(time > 0) {
+				double ms = time / 1000000;
+				timeLabel.setText("Unoptimized Histogram Algorithm ms:\n " + ms + " ms");
+				mainFrame.repaint();
+			}
+			else {
+				JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
+			}
+		}
+		else if(ae.getSource() == optimized) {
 			double time = handler.parallelEqualization();
 			if(time > 0) {
 				double ms = time / 1000000;
-				timeLabel.setText("Parallel Equalization ms: " + ms + " ms");
+				timeLabel.setText("Optimized Histogram Algorithm ms:\n " + ms + " ms");
 				mainFrame.repaint();
 			}
 			else {
