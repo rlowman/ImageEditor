@@ -24,7 +24,9 @@ now use to local index to place the value of that index in the correct place in 
 we have to have a global and local work group size that can work for this. To make sure htis works, I created a new variable
 that I would use as the global width and global height that is the next hightest number divisible by 16 for both the height
 and weight of the actual image. Essentially, I want my kernel to scan more than the image is and discard any indexes that
-are overhanging the picture. Once I had this, I had all my parameters for the kernel that I was optimizing. 
+are overhanging the picture. Once I had this, I had all my parameters for the kernel that I was optimizing. Then, once the
+create_histogram_kernel runs, it returns a collection of histograms that are all 0's. This is the bug that is causing my
+code to crash, and I have ran out of time to de-bug my code.
 
 
 
