@@ -1265,6 +1265,59 @@ public class ImageHandler {
 		return returnValue;
 	}
 	
+	private int[] parrallelSort(int[] array, cl_context context, cl_command_queue commandQueue) {
+		int size = array.length;
+		int[] returnValue = new int[size];
+		Pointer ptrReturn = Pointer.to(returnValue);
+		Pointer ptrArray = Pointer.to(array);
+		
+		cl_mem memArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+				Sizeof.cl_int * size, ptrArray, null);
+
+		cl_mem memResultArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+				Sizeof.cl_int * size, null, null);
+				
+		//Create the program from the source code
+		//Create the OpenCL kernel from the program
+		String sourceFile = readFile("kernels/predicate_kernel.cl");
+		cl_program program = CL.clCreateProgramWithSource(context, 1, new String[]{ sourceFile }, null, null);
+				
+		//Build the program
+		CL.clBuildProgram(program, 0, null, null, null, null);
+				
+		//Create the kernel
+		cl_kernel theKernel = CL.clCreateKernel(program, "predicate", null);
+		
+		for(int i = 0; i < 31; i ++) {
+			int[] bitArray = new int[]{i}; 
+			
+			//Set the arguments for the kernel
+			CL.clSetKernelArg(theKernel, 0, Sizeof.cl_mem, Pointer.to(memArray));
+			CL.clSetKernelArg(theKernel, 1, Sizeof.cl_int, Pointer.to(bitArray));
+					
+			//Set the work−item dimensions
+			long[] globalWorkSize = new long[]{256};
+			long[] localWorkSize = new long[]{256};
+			
+			//Execute the kernel
+			CL.clEnqueueNDRangeKernel(commandQueue, theKernel, 1, null, globalWorkSize, localWorkSize,
+					0, null, null);
+					
+			//Read the output data
+			CL.clEnqueueReadBuffer(commandQueue, memArray, CL.CL_TRUE, 0, size * Sizeof.cl_int, 
+					ptrArray, 0, null, null);
+			for(int i = 0; i < source.length; i ++) {
+				returnValue[i] = theArray[i];
+			}
+		}
+		
+		CL.clReleaseMemObject(memArray);
+		CL.clReleaseMemObject(memResultArray);
+		CL.clReleaseKernel(theKernel);
+		CL.clReleaseProgram(program);
+		return returnValue;
+	}
+	
 //	private void printArray(int[] theArray) {
 //		for(int i = 0; i < theArray.length; i ++) {
 //			System.out.print(theArray[i] + " ");
