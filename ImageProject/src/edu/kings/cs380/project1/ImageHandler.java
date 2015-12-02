@@ -1291,6 +1291,8 @@ public class ImageHandler {
 		for(int i = 0; i < 31; i ++) {
 			int[] bitArray = new int[]{i}; 
 			
+			int[] predicate = new int[size];
+			
 			//Set the arguments for the kernel
 			CL.clSetKernelArg(theKernel, 0, Sizeof.cl_mem, Pointer.to(memArray));
 			CL.clSetKernelArg(theKernel, 1, Sizeof.cl_int, Pointer.to(bitArray));
@@ -1306,9 +1308,6 @@ public class ImageHandler {
 			//Read the output data
 			CL.clEnqueueReadBuffer(commandQueue, memArray, CL.CL_TRUE, 0, size * Sizeof.cl_int, 
 					ptrArray, 0, null, null);
-			for(int i = 0; i < source.length; i ++) {
-				returnValue[i] = theArray[i];
-			}
 		}
 		
 		CL.clReleaseMemObject(memArray);
