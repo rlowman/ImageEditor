@@ -1317,6 +1317,29 @@ public class ImageHandler {
 		return returnValue;
 	}
 	
+	private int[] normalizedCrossCorrelation() throws IOException {
+		File file = new File ("red_eye_effect_template_5.png");
+		BufferedImage ri = ImageIO.read(file);
+		BufferedImage template = new BufferedImage(ri.getWidth(), ri.getHeight(), BufferedImage.TYPE_INT_ARGB);
+		Graphics g = template.getGraphics();
+		g.drawImage(ri, 0, 0, null);
+		for(int row = 0; row < currentImage.getHeight(); row ++) {
+			for(int col = 0; col < currentImage.getWidth(); col ++) {
+				int pixel = currentImage.getRGB(row, col);
+				int RED_MASK = 0x00ff0000;
+				int RED_OFFSET = 16;
+				int GREEN_MASK = 0x0000ff00;
+				int GREEN_OFFSET = 8;
+				int BLUE_MASK = 0x000000ff;
+				int BLUE_OFFSET = 0;
+				int red = (pixel & RED_MASK) >> RED_OFFSET;
+				int green = (pixel & GREEN_MASK) >> GREEN_OFFSET;
+				int blue = (pixel & BLUE_MASK) >> BLUE_OFFSET;
+				
+			}
+		}
+	}
+	
 //	private void printArray(int[] theArray) {
 //		for(int i = 0; i < theArray.length; i ++) {
 //			System.out.print(theArray[i] + " ");
