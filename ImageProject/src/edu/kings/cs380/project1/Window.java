@@ -83,11 +83,17 @@ public class Window implements ActionListener {
 	/**Button that blurs the image using parellel computing*/
 	private JButton parallelBlur;
 	
+	/**Button that equalizes the image using sequential computing*/
 	private JButton seqEqualization;
 	
+	/**Button that equalized the image using parallel computing*/
 	private JButton parallelEqualization;
 	
+	/**Optimized parallel version of equalization*/
 	private JButton optimized;
+	
+	/**Button that removes the red eye from an image*/
+	private JButton redEye;
 	
 	/**HashMap of all the Devices.*/
 	private HashMap<cl_device_id, cl_platform_id> theDevices;
@@ -164,6 +170,8 @@ public class Window implements ActionListener {
 		parallelEqualization.addActionListener(this);
 		optimized = new JButton("Optimized Parallel E.");
 		optimized.addActionListener(this);
+		redEye = new JButton("Remove Red-Eye");
+		redEye.addActionListener(this);
 		buttonPanel.add(grayscaleButton);
 		buttonPanel.add(grayscaleButtonParallel);
 		buttonPanel.add(seqBlur);
@@ -307,6 +315,13 @@ public class Window implements ActionListener {
 			}
 			else {
 				JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
+			}
+		}
+		else if(ae.getSource() == redEye) {
+			double time = handler.redEyeRemoval();
+			if(time > 0) {
+				double ms = time / 1000000;
+				timeLabel.setText("Red-Eye Removal Time ms:\n" + ms + " ms");
 			}
 		}
 		else if(ae.getSource() instanceof JRadioButtonMenuItem){

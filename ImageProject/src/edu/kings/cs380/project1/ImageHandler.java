@@ -11,9 +11,6 @@ import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -991,11 +988,7 @@ public class ImageHandler {
 		DataBufferInt sourceBytes = (DataBufferInt)sourceDataBuffer;
 		int sourceData[] = sourceBytes.getData();
 		int n = sourceData.length;
-		int height = currentImage.getHeight();
-		int width = currentImage.getWidth();
 		int[] result = new int[n];
-		int[] heightArray = new int[]{height};
-		int[] widthArray = new int[]{width};
 		
 		Pointer ptrArrayA = Pointer.to(sourceData);
 		Pointer ptrResult = Pointer.to(result);
@@ -1265,151 +1258,205 @@ public class ImageHandler {
 		return returnValue;
 	}
 	
-	private int[] parrallelSort(int[] array, cl_context context, cl_command_queue commandQueue) {
-		int size = array.length;
-		int[] returnValue = new int[size];
-		Pointer ptrReturn = Pointer.to(returnValue);
-		Pointer ptrArray = Pointer.to(array);
-		
-		cl_mem memArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
-				Sizeof.cl_int * size, ptrArray, null);
-
-		cl_mem memResultArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
-				Sizeof.cl_int * size, null, null);
-				
-		//Create the program from the source code
-		//Create the OpenCL kernel from the program
-		String sourceFile = readFile("kernels/predicate_kernel.cl");
-		cl_program program = CL.clCreateProgramWithSource(context, 1, new String[]{ sourceFile }, null, null);
-				
-		//Build the program
-		CL.clBuildProgram(program, 0, null, null, null, null);
-				
-		//Create the kernel
-		cl_kernel theKernel = CL.clCreateKernel(program, "predicate", null);
-		
-		for(int i = 0; i < 31; i ++) {
-			int[] bitArray = new int[]{i}; 
-			
-			int[] predicate = new int[size];
-			
-			cl_mem memPredicate = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
-					Sizeof.cl_int * size, null, null);
-			
-			//Set the arguments for the kernel
-			CL.clSetKernelArg(theKernel, 0, Sizeof.cl_mem, Pointer.to(memArray));
-			CL.clSetKernelArg(theKernel, 1, Sizeof.cl_int, Pointer.to(bitArray));
-			CL.clSetKernelArg(theKernel, 2, Sizeof.cl_mem, Pointer.to(memPredicate));
+//	private int[] parrallelSort(int[] array, cl_context context, cl_command_queue commandQueue) {
+//		int size = array.length;
+//		int[] returnValue = new int[size];
+//		Pointer ptrReturn = Pointer.to(returnValue);
+//		Pointer ptrArray = Pointer.to(array);
+//		
+//		cl_mem memArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+//				Sizeof.cl_int * size, ptrArray, null);
+//
+//		cl_mem memResultArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+//				Sizeof.cl_int * size, null, null);
+//				
+//		//Create the program from the source code
+//		//Create the OpenCL kernel from the program
+//		String sourceFile = readFile("kernels/predicate_kernel.cl");
+//		cl_program program = CL.clCreateProgramWithSource(context, 1, new String[]{ sourceFile }, null, null);
+//				
+//		//Build the program
+//		CL.clBuildProgram(program, 0, null, null, null, null);
+//				
+//		//Create the kernel
+//		cl_kernel theKernel = CL.clCreateKernel(program, "predicate", null);
+//		
+//		for(int i = 0; i < 31; i ++) {
+//			int[] bitArray = new int[]{i}; 
+//			
+//			int[] predicate = new int[size];
+//			
+//			cl_mem memPredicate = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+//					Sizeof.cl_int * size, null, null);
+//			
+//			//Set the arguments for the kernel
+//			CL.clSetKernelArg(theKernel, 0, Sizeof.cl_mem, Pointer.to(memArray));
+//			CL.clSetKernelArg(theKernel, 1, Sizeof.cl_int, Pointer.to(bitArray));
+//			CL.clSetKernelArg(theKernel, 2, Sizeof.cl_mem, Pointer.to(memPredicate));
+//					
+//			//Set the work−item dimensions
+//			long[] globalWorkSize = new long[]{256};
+//			long[] localWorkSize = new long[]{256};
+//			
+//			//Execute the kernel
+//			CL.clEnqueueNDRangeKernel(commandQueue, theKernel, 1, null, globalWorkSize, localWorkSize,
+//					0, null, null);
+//					
+//			//Read the output data
+//			CL.clEnqueueReadBuffer(commandQueue, memArray, CL.CL_TRUE, 0, size * Sizeof.cl_int, 
+//					ptrArray, 0, null, null);
+//		}
+//		
+//		CL.clReleaseMemObject(memArray);
+//		CL.clReleaseMemObject(memResultArray);
+//		CL.clReleaseKernel(theKernel);
+//		CL.clReleaseProgram(program);
+//		return returnValue;
+//	}
+//	
+	public double redEyeRemoval() throws IOException {
+		double returnValue = -1;
+		if(currentImage != null) {
+			//Initialize the context properties	
+			cl_context_properties contextProperties = new cl_context_properties();
+			contextProperties.addProperty(CL.CL_CONTEXT_PLATFORM, selectedPlatform);
 					
-			//Set the work−item dimensions
-			long[] globalWorkSize = new long[]{256};
-			long[] localWorkSize = new long[]{256};
+			//Create a context for the selected device
+			cl_context context = CL.clCreateContext(
+			contextProperties, 1,
+				new cl_device_id[]{selectedDevice},
+				null, null, null);		
+			
+					
+			//Create a command queue for the selected device
+			cl_command_queue commandQueue = CL.clCreateCommandQueue(context, selectedDevice, 0, null);
+
+			//Get Raster information for array
+			WritableRaster sourceRaster = currentImage.getRaster();
+			DataBuffer sourceDataBuffer = sourceRaster.getDataBuffer();
+			DataBufferInt sourceBytes = (DataBufferInt)sourceDataBuffer;
+			int sourceData[] = sourceBytes.getData();
+			int n = sourceData.length;
+			int height = currentImage.getHeight();
+			int width = currentImage.getWidth();
+			File file = new File ("red_eye_effect_template_5.png");
+			BufferedImage ri = ImageIO.read(file);
+			BufferedImage template = new BufferedImage (ri.getWidth(), ri.getHeight (), BufferedImage.TYPE_INT_ARGB );
+			Graphics g = template.getGraphics();
+			g.drawImage (ri , 0, 0, null);
+			WritableRaster sourceRasterTemplate = template.getRaster();
+			DataBuffer sourceDataBufferTemplate = sourceRasterTemplate.getDataBuffer();
+			DataBufferInt sourceBytesTemplate = (DataBufferInt)sourceDataBufferTemplate;
+			int[] sourceDataTemplate = sourceBytesTemplate.getData();
+			int templateHeight = template.getHeight();
+			int templateWidth = template.getWidth();
+			
+			int[]redResult = new int[n];
+			int[]greenResult = new int[n];
+			int[]blueResult = new int[n];
+			
+			Pointer ptrArrayA = Pointer.to(sourceData);
+			Pointer ptrRedResult = Pointer.to(redResult);
+			Pointer ptrGreenResult = Pointer.to(greenResult);
+			Pointer ptrBlueResult = Pointer.to(blueResult);
+			
+			cl_mem memArrayA = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_int * n, ptrArrayA, null);
+			cl_mem memRedResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * n, null, null);
+			cl_mem memGreenResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * n, null, null);
+			cl_mem memBlueResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * n, null, null);
+			
+			String source = readFile("kernels/blur_array_setter.cl");
+			cl_program program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
+					
+			CL.clBuildProgram(program, 0, null, null, null, null);
+					
+			cl_kernel kernel = CL.clCreateKernel(program, "array_setter_kernel", null);
+					
+			CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memArrayA));
+			CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memRedResult));
+			CL.clSetKernelArg(kernel, 2, Sizeof.cl_mem, Pointer.to(memGreenResult));
+			CL.clSetKernelArg(kernel, 3, Sizeof.cl_mem, Pointer.to(memBlueResult));
+			
+			long[] globalWorkSize = new long[]{n};
+			long[] localWorkSize = new long[]{1};
 			
 			//Execute the kernel
-			CL.clEnqueueNDRangeKernel(commandQueue, theKernel, 1, null, globalWorkSize, localWorkSize,
+			long startTime = System.nanoTime();
+			CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
 					0, null, null);
-					
+				
 			//Read the output data
-			CL.clEnqueueReadBuffer(commandQueue, memArray, CL.CL_TRUE, 0, size * Sizeof.cl_int, 
-					ptrArray, 0, null, null);
+			CL.clEnqueueReadBuffer(commandQueue, memRedResult, CL.CL_TRUE, 0, n * Sizeof.cl_int, 
+					ptrRedResult, 0, null, null);
+			
+			CL.clEnqueueReadBuffer(commandQueue, memGreenResult, CL.CL_TRUE, 0, n* Sizeof.cl_int,
+					ptrGreenResult, 0, null, null);
+			
+			CL.clEnqueueReadBuffer(commandQueue, memBlueResult, CL.CL_TRUE, 0, n* Sizeof.cl_int,
+					ptrBlueResult, 0, null, null);
+			long runTime = System.nanoTime() - startTime;
+			
+			
 		}
-		
-		CL.clReleaseMemObject(memArray);
-		CL.clReleaseMemObject(memResultArray);
-		CL.clReleaseKernel(theKernel);
-		CL.clReleaseProgram(program);
 		return returnValue;
 	}
 	
-	private int[] normalizedCrossCorrelation() throws IOException {
-		int RED_MASK = 0x00ff0000;
-		int RED_OFFSET = 16;
-		int GREEN_MASK = 0x0000ff00;
-		int GREEN_OFFSET = 8;
-		int BLUE_MASK = 0x000000ff;
-		int BLUE_OFFSET = 0;
-		int height = currentImage.getHeight();
-		int width = currentImage.getWidth();
-		File file = new File ("red_eye_effect_template_5.png");
-		BufferedImage ri = ImageIO.read(file);
-		BufferedImage template = new BufferedImage (ri.getWidth(), ri.getHeight(), BufferedImage.TYPE_INT_ARGB);
-		Graphics g = template.getGraphics();
-		g.drawImage(ri, 0, 0, null);
-		int templateHeight = template.getHeight();
-		int templateWidth = template.getWidth();
-		for(int row = 0; row < height; row ++) {
-			for(int col = 0; col < width; col ++) {
-				for(int i = 0; i < 3; i ++) {
-					int first = 0;
-					int second = 0;
-					int numerator = 0;
-					int f = meanValue(33, 33, row, col, i);
-					int t = templateAverage(i, template);
-					for(int x = row - (templateWidth/2); x < row + (templateWidth/2) - 1; x ++) {
-						for(int y = height - (templateHeight/2); y < height + (templateHeight/2); y ++) {
-							int pixel = currentImage.getRGB(x, y);
-							int red = (pixel & RED_MASK) >> RED_OFFSET;
-							int green = (pixel & GREEN_MASK) >> GREEN_OFFSET;
-							int blue = (pixel & BLUE_MASK) >> BLUE_OFFSET;
-							int color;
-							if(i == 0) {
-								color = red;
-							}
-							else if(i == 1) {
-								color = green;
-							}
-							else {
-								color = blue;
-							}
-							int u = row % 33;
-							numerator += (color - f) * ()
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	private int templateAverage(int channel, BufferedImage template) {
-		int count = 0;
-		for(int row = 0; row < template.getWidth(); row ++) {
-			for(int col = 0; col < template.getHeight(); col ++) {
-				Color temp = new Color(template.getRGB(row, col));
-				if(channel == 0) {
-					count += temp.getRed();
-				}
-				else if(channel == 1) {
-					count += temp.getGreen();
-				}
-				else if(channel == 2) {
-					count += temp.getBlue();
-				}
-			}
-		}
-		return count / (template.getWidth() * template.getHeight());
-	}
-	
-	private int meanValue(int height, int width, int u, int v, int channel) {
-		int count = 0;
-		for(int x = u - (width / 2); x < u + (width / 2) - 1; x ++) {
-			int innerCount = 0;
-			for(int y = v - (height / 2); y < v + (height / 2) - 1; y ++) {
-				if((x >= 0 && x < width) && (y >= 0 && y < height)) {
-					Color temp = new Color(currentImage.getRGB(x, y));
-					if(channel == 0) {
-						innerCount += temp.getRed();
-					}
-					else if(channel == 1) {
-						innerCount += temp.getGreen();
-					}
-					else if(channel == 2) {
-						innerCount += temp.getBlue();
-					}
-				}
-			}
-			count += innerCount;
-		}
-		return count / (height * width);
-	}
+//	private float[] normalizedCrossCorrelationSequential(int[] templateValues, int[] imageValues,
+//			int height, int width, int templateHeight, int templateWidth) throws IOException {
+//		int count = 0;
+//		float[] returnValue = new float[imageValues.length];
+//		for(int row = 0; row < width; row ++) {
+//			for(int col = 0; col < height; col ++) {
+//				int index = (row * width) + col;
+//				count += imageValues[index];
+//			}
+//		}
+//		float t = count / imageValues.length;
+//		for(int row = 0; row < height; row ++) {
+//			for(int col = 0; col < width; col ++) {
+//				int index = (row * width) + col;
+//				float numerator = 0;
+//				double denominator = 0;
+//				float denominatorOne = 0;
+//				float denominatorTwo = 0;
+//			    int valueCount = 0;
+//				for(int x = col - (width / 2); x < col + (width / 2) - 1; x ++) {
+//					for(int y = row - (height / 2); y < row + (height / 2) - 1; y ++) {
+//						if((x >= 0 && x < width) && (y >= 0 && y < height)) {
+//							valueCount += imageValues[index];
+//						}
+//					}
+//				}
+//				float f = valueCount / templateValues.length;
+//			    float firstPart = 0;
+//			    float secondPart = 0;
+//			    int rowCount = 0;
+//			    int colCount = 0;
+//				for(int x = row - (templateWidth/2); x < row + (templateWidth/2); x ++) {
+//					for(int y = height - (templateHeight/2); y < height + (templateHeight/2); y ++) {
+//						int templateIndex = (rowCount * templateWidth) + colCount;
+//						int pictureIndex = (y * width) + x; 
+//						if((x >= 0 && x < width) && (y >=0 && y < height)) {
+//							firstPart = (templateValues[templateIndex] - t);
+//							secondPart = (imageValues[pictureIndex] - f);
+//							numerator += firstPart * secondPart;
+//							denominatorOne += Math.pow(firstPart, 2);
+//							denominatorTwo += Math.pow(secondPart, 2);
+//						}
+//						colCount ++;
+//					}
+//					rowCount ++;
+//					colCount = 0;
+//				}
+//				denominator = (Math.sqrt(denominatorOne) * Math.sqrt(denominatorTwo));
+//				returnValue[index] = (float) (numerator / denominator);
+//			}
+//		}
+//		return returnValue;
+//	}
 	
 }
