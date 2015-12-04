@@ -1293,9 +1293,13 @@ public class ImageHandler {
 			
 			int[] predicate = new int[size];
 			
+			cl_mem memPredicate = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * size, null, null);
+			
 			//Set the arguments for the kernel
 			CL.clSetKernelArg(theKernel, 0, Sizeof.cl_mem, Pointer.to(memArray));
 			CL.clSetKernelArg(theKernel, 1, Sizeof.cl_int, Pointer.to(bitArray));
+			CL.clSetKernelArg(theKernel, 2, Sizeof.cl_mem, Pointer.to(memPredicate));
 					
 			//Set the work−item dimensions
 			long[] globalWorkSize = new long[]{256};
@@ -1318,34 +1322,94 @@ public class ImageHandler {
 	}
 	
 	private int[] normalizedCrossCorrelation() throws IOException {
+		int RED_MASK = 0x00ff0000;
+		int RED_OFFSET = 16;
+		int GREEN_MASK = 0x0000ff00;
+		int GREEN_OFFSET = 8;
+		int BLUE_MASK = 0x000000ff;
+		int BLUE_OFFSET = 0;
+		int height = currentImage.getHeight();
+		int width = currentImage.getWidth();
 		File file = new File ("red_eye_effect_template_5.png");
 		BufferedImage ri = ImageIO.read(file);
-		BufferedImage template = new BufferedImage(ri.getWidth(), ri.getHeight(), BufferedImage.TYPE_INT_ARGB);
+		BufferedImage template = new BufferedImage (ri.getWidth(), ri.getHeight(), BufferedImage.TYPE_INT_ARGB);
 		Graphics g = template.getGraphics();
 		g.drawImage(ri, 0, 0, null);
-		for(int row = 0; row < currentImage.getHeight(); row ++) {
-			for(int col = 0; col < currentImage.getWidth(); col ++) {
-				int pixel = currentImage.getRGB(row, col);
-				int RED_MASK = 0x00ff0000;
-				int RED_OFFSET = 16;
-				int GREEN_MASK = 0x0000ff00;
-				int GREEN_OFFSET = 8;
-				int BLUE_MASK = 0x000000ff;
-				int BLUE_OFFSET = 0;
-				int red = (pixel & RED_MASK) >> RED_OFFSET;
-				int green = (pixel & GREEN_MASK) >> GREEN_OFFSET;
-				int blue = (pixel & BLUE_MASK) >> BLUE_OFFSET;
-				
+		int templateHeight = template.getHeight();
+		int templateWidth = template.getWidth();
+		for(int row = 0; row < height; row ++) {
+			for(int col = 0; col < width; col ++) {
+				for(int i = 0; i < 3; i ++) {
+					int first = 0;
+					int second = 0;
+					int numerator = 0;
+					int f = meanValue(33, 33, row, col, i);
+					int t = templateAverage(i, template);
+					for(int x = row - (templateWidth/2); x < row + (templateWidth/2) - 1; x ++) {
+						for(int y = height - (templateHeight/2); y < height + (templateHeight/2); y ++) {
+							int pixel = currentImage.getRGB(x, y);
+							int red = (pixel & RED_MASK) >> RED_OFFSET;
+							int green = (pixel & GREEN_MASK) >> GREEN_OFFSET;
+							int blue = (pixel & BLUE_MASK) >> BLUE_OFFSET;
+							int color;
+							if(i == 0) {
+								color = red;
+							}
+							else if(i == 1) {
+								color = green;
+							}
+							else {
+								color = blue;
+							}
+							int u = row % 33;
+							numerator += (color - f) * ()
+						}
+					}
+				}
 			}
 		}
 	}
 	
-//	private void printArray(int[] theArray) {
-//		for(int i = 0; i < theArray.length; i ++) {
-//			System.out.print(theArray[i] + " ");
-//			if(i % 80 == 0) {
-//				System.out.println();
-//			}
-//		}
-//	}
+	private int templateAverage(int channel, BufferedImage template) {
+		int count = 0;
+		for(int row = 0; row < template.getWidth(); row ++) {
+			for(int col = 0; col < template.getHeight(); col ++) {
+				Color temp = new Color(template.getRGB(row, col));
+				if(channel == 0) {
+					count += temp.getRed();
+				}
+				else if(channel == 1) {
+					count += temp.getGreen();
+				}
+				else if(channel == 2) {
+					count += temp.getBlue();
+				}
+			}
+		}
+		return count / (template.getWidth() * template.getHeight());
+	}
+	
+	private int meanValue(int height, int width, int u, int v, int channel) {
+		int count = 0;
+		for(int x = u - (width / 2); x < u + (width / 2) - 1; x ++) {
+			int innerCount = 0;
+			for(int y = v - (height / 2); y < v + (height / 2) - 1; y ++) {
+				if((x >= 0 && x < width) && (y >= 0 && y < height)) {
+					Color temp = new Color(currentImage.getRGB(x, y));
+					if(channel == 0) {
+						innerCount += temp.getRed();
+					}
+					else if(channel == 1) {
+						innerCount += temp.getGreen();
+					}
+					else if(channel == 2) {
+						innerCount += temp.getBlue();
+					}
+				}
+			}
+			count += innerCount;
+		}
+		return count / (height * width);
+	}
+	
 }
