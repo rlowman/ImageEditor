@@ -318,10 +318,15 @@ public class Window implements ActionListener {
 			}
 		}
 		else if(ae.getSource() == redEye) {
-			double time = handler.redEyeRemoval();
-			if(time > 0) {
-				double ms = time / 1000000;
-				timeLabel.setText("Red-Eye Removal Time ms:\n" + ms + " ms");
+			double time;
+			try {
+				time = handler.redEyeRemoval();
+				if(time > 0) {
+					double ms = time / 1000000;
+					timeLabel.setText("Red-Eye Removal Time ms:\n" + ms + " ms");
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
 		else if(ae.getSource() instanceof JRadioButtonMenuItem){

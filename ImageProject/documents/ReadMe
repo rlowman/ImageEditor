@@ -5,7 +5,7 @@ the fact that more options besides grayscale will become available, which can be
 grayscale button. The picture can be opened from a .png file, edited, then saved to the same file. The program has 
 two choices for grayscaling, using either parallel programming or sequential. The program also has two choices for 
 blurring an image, also using either parallel or sequential. Equalization was implemented and also has the option to 
-either choose parallel or sequantial computting.
+either choose parallel or sequantial computing and then was optimized
 
 File Types Supported: PNG
 
@@ -28,5 +28,8 @@ are overhanging the picture. Once I had this, I had all my parameters for the ke
 create_histogram_kernel runs, it returns a collection of histograms that are all 0's. This is the bug that is causing my
 code to crash, and I have ran out of time to de-bug my code.
 
+										*UPDATE PHASE 6*
+The code was not finished as I am getting the wrong values for when I run it sequentially, which I still have but is 
+commented out. Radix Sort has also not been implemented so for this phase to be complete that also needs to be fixed.
 
 

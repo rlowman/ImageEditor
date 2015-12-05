@@ -11,6 +11,7 @@ import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -1400,7 +1401,147 @@ public class ImageHandler {
 					ptrBlueResult, 0, null, null);
 			long runTime = System.nanoTime() - startTime;
 			
+			int s = sourceDataTemplate.length;
+			int[] redTemplate = new int[s];
+			int[] greenTemplate = new int[s];
+			int[] blueTemplate = new int[s];
 			
+			Pointer ptrRedTemplate = Pointer.to(redTemplate);
+			Pointer ptrGreenTemplate = Pointer.to(greenTemplate);
+			Pointer ptrBlueTemplate = Pointer.to(blueTemplate);
+			
+			Pointer ptrTemplate = Pointer.to(sourceDataTemplate);
+			
+			cl_mem memTemplateValues = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_int * s, ptrTemplate, null);
+			cl_mem memRedResultTemplate = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * s, null, null);
+			cl_mem memGreenResultTemplate = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * s, null, null);
+			cl_mem memBlueResultTemplate = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * s, null, null);
+			
+			CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memTemplateValues));
+			CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memRedResultTemplate));
+			CL.clSetKernelArg(kernel, 2, Sizeof.cl_mem, Pointer.to(memGreenResultTemplate));
+			CL.clSetKernelArg(kernel, 3, Sizeof.cl_mem, Pointer.to(memBlueResultTemplate));
+			
+			globalWorkSize = new long[]{s};
+			
+			//Execute the kernel
+			long startTime2 = System.nanoTime();
+			CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+					0, null, null);
+				
+			//Read the output data
+			CL.clEnqueueReadBuffer(commandQueue, memRedResultTemplate, CL.CL_TRUE, 0, s * Sizeof.cl_int, 
+					ptrRedTemplate, 0, null, null);
+			
+			CL.clEnqueueReadBuffer(commandQueue, memGreenResult, CL.CL_TRUE, 0, s * Sizeof.cl_int,
+					ptrGreenTemplate, 0, null, null);
+			
+			CL.clEnqueueReadBuffer(commandQueue, memBlueResult, CL.CL_TRUE, 0, s * Sizeof.cl_int,
+					ptrBlueTemplate, 0, null, null);
+			runTime += System.nanoTime() - startTime2;
+			
+			float[] redC = new float[n];
+			float[] greenC = new float[n];
+			float[] blueC = new float[n];
+			
+			Pointer ptrRedC = Pointer.to(redC);
+			Pointer ptrGreenC = Pointer.to(greenC);
+			Pointer ptrBlueC = Pointer.to(blueC);
+			
+			cl_mem memRedCResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * n, null, null);
+			cl_mem memGreenCResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * n, null, null);
+			cl_mem memBlueCResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * n, null, null);
+
+			source = readFile("kernels/red_eye_kernel.cl");
+			program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
+					
+			CL.clBuildProgram(program, 0, null, null, null, null);
+					
+			kernel = CL.clCreateKernel(program, "red_eye", null);
+					
+			CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memRedResultTemplate));
+			CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memRedResult));
+			CL.clSetKernelArg(kernel, 2, Sizeof.cl_int, Pointer.to(new int[]{height} ));
+			CL.clSetKernelArg(kernel, 3, Sizeof.cl_int, Pointer.to(new int[]{width}));
+			CL.clSetKernelArg(kernel, 4, Sizeof.cl_int, Pointer.to(new int[]{templateHeight}));
+			CL.clSetKernelArg(kernel, 5, Sizeof.cl_int, Pointer.to(new int[]{templateWidth}));
+			CL.clSetKernelArg(kernel, 6, Sizeof.cl_mem, Pointer.to(memRedCResult));
+			
+			globalWorkSize = new long[]{n};
+			
+			//Execute the kernel
+			long startTime3 = System.nanoTime();
+			CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+					0, null, null);
+				
+			//Read the output data
+			CL.clEnqueueReadBuffer(commandQueue, memRedCResult, CL.CL_TRUE, 0, n * Sizeof.cl_int, 
+					ptrRedC, 0, null, null);
+			runTime += System.nanoTime() - startTime3;
+			
+			CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memGreenResultTemplate));
+			CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memGreenResult));
+			CL.clSetKernelArg(kernel, 2, Sizeof.cl_int, Pointer.to(new int[]{height} ));
+			CL.clSetKernelArg(kernel, 3, Sizeof.cl_int, Pointer.to(new int[]{width}));
+			CL.clSetKernelArg(kernel, 4, Sizeof.cl_int, Pointer.to(new int[]{templateHeight}));
+			CL.clSetKernelArg(kernel, 5, Sizeof.cl_int, Pointer.to(new int[]{templateWidth}));
+			CL.clSetKernelArg(kernel, 6, Sizeof.cl_mem, Pointer.to(memGreenCResult));
+			
+			globalWorkSize = new long[]{n};
+			
+			//Execute the kernel
+			long startTime4 = System.nanoTime();
+			CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+					0, null, null);
+				
+			//Read the output data
+			CL.clEnqueueReadBuffer(commandQueue, memGreenCResult, CL.CL_TRUE, 0, n * Sizeof.cl_int, 
+					ptrGreenC, 0, null, null);
+			runTime += System.nanoTime() - startTime4;
+			
+			CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memBlueResultTemplate));
+			CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memBlueResult));
+			CL.clSetKernelArg(kernel, 2, Sizeof.cl_int, Pointer.to(new int[]{height} ));
+			CL.clSetKernelArg(kernel, 3, Sizeof.cl_int, Pointer.to(new int[]{width}));
+			CL.clSetKernelArg(kernel, 4, Sizeof.cl_int, Pointer.to(new int[]{templateHeight}));
+			CL.clSetKernelArg(kernel, 5, Sizeof.cl_int, Pointer.to(new int[]{templateWidth}));
+			CL.clSetKernelArg(kernel, 6, Sizeof.cl_mem, Pointer.to(memBlueCResult));
+			
+			//Execute the kernel
+			long startTime5 = System.nanoTime();
+			CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+					0, null, null);
+				
+			//Read the output data
+			CL.clEnqueueReadBuffer(commandQueue, memGreenCResult, CL.CL_TRUE, 0, n * Sizeof.cl_int, 
+					ptrBlueC, 0, null, null);
+			runTime += System.nanoTime() - startTime5;
+			
+			float[] finalC = new float[n];
+			for(int i = 0; 0 < n; i ++) {
+				float value = (redC[i] * blueC[i] * greenC[i]) * 100;
+				finalC[i] = value;
+			}
+			
+			float largest = 0;
+			float position = 0;
+			int count = 0;
+			for(float temp : finalC) {
+				if(temp >= largest) {
+					position = count;
+					largest = temp;
+				}
+				count ++;
+			}
+			
+			//Change Pixels Here
 		}
 		return returnValue;
 	}
