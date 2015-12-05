@@ -11,7 +11,6 @@ import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -1542,6 +1541,7 @@ public class ImageHandler {
 			}
 			
 			//Change Pixels Here
+			returnValue = runTime;
 		}
 		return returnValue;
 	}
