@@ -1,12 +1,15 @@
 package edu.kings.cs380.project1;
+import java.awt.Graphics;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import javax.imageio.ImageIO;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -95,6 +98,8 @@ public class Window implements ActionListener {
 	/**Button that removes the red eye from an image*/
 	private JButton redEye;
 	
+	private JButton imageClone;
+	
 	/**HashMap of all the Devices.*/
 	private HashMap<cl_device_id, cl_platform_id> theDevices;
 	
@@ -172,6 +177,8 @@ public class Window implements ActionListener {
 		optimized.addActionListener(this);
 		redEye = new JButton("Remove Red-Eye");
 		redEye.addActionListener(this);
+		imageClone = new JButton("Seamless Image Clone");
+		imageClone.addActionListener(this);
 		buttonPanel.add(grayscaleButton);
 		buttonPanel.add(grayscaleButtonParallel);
 		buttonPanel.add(seqBlur);
@@ -179,6 +186,7 @@ public class Window implements ActionListener {
 		buttonPanel.add(seqEqualization);
 		buttonPanel.add(parallelEqualization);
 		buttonPanel.add(optimized);
+		buttonPanel.add(imageClone);
 		mainFrame.add(buttonPanel);
 		mainFrame.add(drawingPanel);
 		
@@ -196,7 +204,6 @@ public class Window implements ActionListener {
 	 * 
 	 * @param ae the action event that triggered the method
 	 */
-	@Override
 	public void actionPerformed(ActionEvent ae) {
 		if(ae.getSource() == open) {
 			JFileChooser chooser = new JFileChooser();
@@ -327,6 +334,31 @@ public class Window implements ActionListener {
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
+			}
+		}
+		else if(ae.getSource() == imageClone) {
+			JFileChooser chooser = new JFileChooser();
+			if(chooser.showOpenDialog(mainFrame) == JFileChooser.APPROVE_OPTION) {
+				File source = chooser.getSelectedFile();
+				BufferedImage ri;
+				try {
+					ri = ImageIO.read(source);
+					BufferedImage tempImage = new BufferedImage(ri.getWidth(), ri.getHeight(), 
+							BufferedImage.TYPE_INT_ARGB);
+					Graphics g = tempImage.getGraphics();
+					g.drawImage(ri, 0, 0, null);
+					double time = handler.seamlessImageClone(tempImage);
+					if(time > 0) {
+						double ms = time / 1000000;
+						timeLabel.setText("Image Clone Algorithm ms:\n " + ms + " ms");
+						mainFrame.repaint();
+					}
+					else {
+						JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 		else if(ae.getSource() instanceof JRadioButtonMenuItem){
