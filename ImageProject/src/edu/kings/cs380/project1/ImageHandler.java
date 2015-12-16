@@ -1564,10 +1564,10 @@ public class ImageHandler {
 			cl_command_queue commandQueue = CL.clCreateCommandQueue(context, selectedDevice, 0, null);
 
 			//Get Raster information for array
-			WritableRaster sourceRaster = tempImage.getRaster();
-			DataBuffer sourceDataBuffer = sourceRaster.getDataBuffer();
-			DataBufferInt sourceBytes = (DataBufferInt)sourceDataBuffer;
-			int sourceData[] = sourceBytes.getData();
+			WritableRaster tempRaster = tempImage.getRaster();
+			DataBuffer tempDataBuffer = tempRaster.getDataBuffer();
+			DataBufferInt tempBytes = (DataBufferInt)tempDataBuffer;
+			int sourceData[] = tempBytes.getData();
 			int n = sourceData.length;
 			int[] maskData = new int[n];
 			
@@ -1603,6 +1603,29 @@ public class ImageHandler {
 					ptrMaskResult, 0, null, null);
 			
 			long runTime = System.nanoTime() - startTime;
+			
+			int[] result = new int[n];
+			WritableRaster sourceRaster = tempImage.getRaster();
+			DataBuffer sourceDataBuffer = sourceRaster.getDataBuffer();
+			DataBufferInt sourceBytes = (DataBufferInt)sourceDataBuffer;
+			int targetData[] = sourceBytes.getData();
+			
+			Pointer ptrResult = Pointer.to(result);
+			Pointer ptrTarget = Pointer.to(targetData);
+			
+			cl_mem memTarget = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_int * n, ptrTarget, null);
+			cl_mem memResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * n, null, null);
+			
+			source = readFile("kernels/handle_pixels_kernel.cl");
+			program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
+			
+			kernel = CL.clCreateKernel(program, "handle_pixels", null);
+			
+			CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memMaskResult));
+			CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memTarget));
+			CL.clSetKernelArg(kernel, 2, Sizeof.cl_mem, Pointer.to(memResult));
 			
 			DataBufferInt resultDataBuffer = new DataBufferInt(maskData, maskData.length);
 			Raster resultRaster = Raster.createRaster(currentImage.getSampleModel(), resultDataBuffer, new Point(0, 0));
