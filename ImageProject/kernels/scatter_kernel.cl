@@ -2,7 +2,7 @@ __kernel void scatter(__global const int * source,
 					  __global const int * predicate,
 					  const int bit,
 					  __global const int * predicate_scan,
-					  __global const int * not_predicate_scan
+					  __global const int * not_predicate_scan,
 					  const int predicate_max, 
 					  __global int * result) {
 					  

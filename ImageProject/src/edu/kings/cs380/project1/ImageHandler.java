@@ -1296,7 +1296,7 @@ public class ImageHandler {
 
 		cl_mem memResultArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
 				Sizeof.cl_int * size, null, null);
-				
+
 		//Create the program from the source code
 		//Create the OpenCL kernel from the program
 		String sourceFile = readFile("kernels/predicate_kernel.cl");
@@ -1309,7 +1309,16 @@ public class ImageHandler {
 		cl_kernel theKernel = CL.clCreateKernel(program, "predicate", null);
 		
 		for(int i = 0; i < 31; i ++) {
-			
+			if(i > 0) {
+				sourceFile = readFile("kernels/predicate_kernel.cl");
+				program = CL.clCreateProgramWithSource(context, 1, new String[]{ sourceFile }, null, null);
+						
+				//Build the program
+				CL.clBuildProgram(program, 0, null, null, null, null);
+						
+				//Create the kernel
+				theKernel = CL.clCreateKernel(program, "predicate", null);
+			}
 			cl_mem memArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
 					Sizeof.cl_int * size, ptrArray, null);
 			
