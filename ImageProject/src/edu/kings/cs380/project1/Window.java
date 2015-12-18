@@ -105,6 +105,8 @@ public class Window implements ActionListener {
 	
 	private JButton sepiaPar;
 	
+	private JButton test;
+	
 	/**HashMap of all the Devices.*/
 	private HashMap<cl_device_id, cl_platform_id> theDevices;
 	
@@ -188,6 +190,8 @@ public class Window implements ActionListener {
 		sepiaSeq.addActionListener(this);
 		sepiaPar = new JButton("Sepia Parallel");
 		sepiaPar.addActionListener(this);
+		test = new JButton("Sort Test");
+		test.addActionListener(this);
 		buttonPanel.add(grayscaleButton);
 		buttonPanel.add(grayscaleButtonParallel);
 		buttonPanel.add(seqBlur);
@@ -198,6 +202,7 @@ public class Window implements ActionListener {
 		buttonPanel.add(imageClone);
 		buttonPanel.add(sepiaSeq);
 		buttonPanel.add(sepiaPar);
+		buttonPanel.add(test);
 		mainFrame.add(buttonPanel);
 		mainFrame.add(drawingPanel);
 		
@@ -253,6 +258,13 @@ public class Window implements ActionListener {
 				}
 			} catch (IOException e) {
 				JOptionPane.showMessageDialog(mainFrame, "The File cound not be saved", "Error", JOptionPane.ERROR_MESSAGE);
+			}
+		}
+		else if(ae.getSource() == test) {
+			int[] testArray = new int[]{7, 3, 19, 4, 6, 19, 10, 1, 2, 9, 7, 12, 11, 3};
+			int[] result = handler.parrallelSort(testArray, handler.getContext(), handler.getCommandQueue());
+			for(int temp : result) {
+				System.out.print(temp + " ");
 			}
 		}
 		else if(ae.getSource() == saveAs) {
@@ -394,7 +406,15 @@ public class Window implements ActionListener {
 			}
 		}
 		else if(ae.getSource() == sepiaPar) {
-			
+			double time = handler.sepiaParallel();
+			if(time > 0) {
+				double ms = time / 1000000;
+				timeLabel.setText("Sepia Parallel Algorithm ms:\n " + ms + " ms");
+				mainFrame.repaint();
+			}
+			else {
+				JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
+			}
 		}
 		else if(ae.getSource() instanceof JRadioButtonMenuItem){
 			boolean found = false;

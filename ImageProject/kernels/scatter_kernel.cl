@@ -3,7 +3,7 @@ __kernel void scatter(__global const int * source,
 					  const int bit,
 					  __global const int * predicate_scan,
 					  __global const int * not_predicate_scan
-					  const int predicate_max, const int not_predicate_max,
+					  const int predicate_max, 
 					  __global int * result) {
 					  
 	int i = get_global_id(0);
@@ -13,10 +13,10 @@ __kernel void scatter(__global const int * source,
 	int setter = 0;
 	
 	if(value == 1) {
-		setter = predicate_scan[i] + not_predicate_max;
+		setter = not_predicate_scan[i];
 	}
 	else {
-		setter = not_predicate_scan[i];
+		setter = predicate_scan[i] + predicate_max;
 	}
 	
 	result[setter] = current;

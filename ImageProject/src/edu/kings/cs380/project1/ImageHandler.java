@@ -55,6 +55,12 @@ public class ImageHandler {
 	/**The id of the selected platform.*/
 	private cl_platform_id selectedPlatform;
 	
+	private cl_context_properties contextProperties;
+	
+	private cl_context context;
+	
+	private cl_command_queue commandQueue;
+	
 	/**
 	 * Constructor for the ImageHandler class.
 	 * 
@@ -68,8 +74,26 @@ public class ImageHandler {
 		currentFile = null;
 		selectedDevice = theId;
 		selectedPlatform = thePlatform;
+		
+		contextProperties = new cl_context_properties();
+		contextProperties.addProperty(CL.CL_CONTEXT_PLATFORM, selectedPlatform);
+		
+		context = CL.clCreateContext(
+		contextProperties, 1,
+			new cl_device_id[]{selectedDevice},
+			null, null, null);		
+		
+		commandQueue = CL.clCreateCommandQueue(context, selectedDevice, 0, null);
 	}
 	
+	public cl_context getContext() {
+		return context;
+	}
+
+	public cl_command_queue getCommandQueue() {
+		return commandQueue;
+	}
+
 	/**
 	 * Loads an image from a file.
 	 *  
@@ -1264,62 +1288,129 @@ public class ImageHandler {
 		return returnValue;
 	}
 	
-//	private int[] parrallelSort(int[] array, cl_context context, cl_command_queue commandQueue) {
-//		int size = array.length;
-//		int[] returnValue = new int[size];
-//		Pointer ptrReturn = Pointer.to(returnValue);
-//		Pointer ptrArray = Pointer.to(array);
-//		
-//		cl_mem memArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
-//				Sizeof.cl_int * size, ptrArray, null);
-//
-//		cl_mem memResultArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
-//				Sizeof.cl_int * size, null, null);
-//				
-//		//Create the program from the source code
-//		//Create the OpenCL kernel from the program
-//		String sourceFile = readFile("kernels/predicate_kernel.cl");
-//		cl_program program = CL.clCreateProgramWithSource(context, 1, new String[]{ sourceFile }, null, null);
-//				
-//		//Build the program
-//		CL.clBuildProgram(program, 0, null, null, null, null);
-//				
-//		//Create the kernel
-//		cl_kernel theKernel = CL.clCreateKernel(program, "predicate", null);
-//		
-//		for(int i = 0; i < 31; i ++) {
-//			int[] bitArray = new int[]{i}; 
-//			
-//			int[] predicate = new int[size];
-//			
-//			cl_mem memPredicate = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
-//					Sizeof.cl_int * size, null, null);
-//			
-//			//Set the arguments for the kernel
-//			CL.clSetKernelArg(theKernel, 0, Sizeof.cl_mem, Pointer.to(memArray));
-//			CL.clSetKernelArg(theKernel, 1, Sizeof.cl_int, Pointer.to(bitArray));
-//			CL.clSetKernelArg(theKernel, 2, Sizeof.cl_mem, Pointer.to(memPredicate));
-//					
-//			//Set the work−item dimensions
-//			long[] globalWorkSize = new long[]{256};
-//			long[] localWorkSize = new long[]{256};
-//			
-//			//Execute the kernel
-//			CL.clEnqueueNDRangeKernel(commandQueue, theKernel, 1, null, globalWorkSize, localWorkSize,
-//					0, null, null);
-//					
-//			//Read the output data
-//			CL.clEnqueueReadBuffer(commandQueue, memArray, CL.CL_TRUE, 0, size * Sizeof.cl_int, 
-//					ptrArray, 0, null, null);
-//		}
-//		
-//		CL.clReleaseMemObject(memArray);
-//		CL.clReleaseMemObject(memResultArray);
-//		CL.clReleaseKernel(theKernel);
-//		CL.clReleaseProgram(program);
-//		return returnValue;
-//	}
-//	
+	public int[] parrallelSort(int[] array, cl_context context, cl_command_queue commandQueue) {
+		int size = array.length;
+		int[] returnValue = new int[size];
+		Pointer ptrReturn = Pointer.to(returnValue);
+		Pointer ptrArray = Pointer.to(array);
+
+		cl_mem memResultArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+				Sizeof.cl_int * size, null, null);
+				
+		//Create the program from the source code
+		//Create the OpenCL kernel from the program
+		String sourceFile = readFile("kernels/predicate_kernel.cl");
+		cl_program program = CL.clCreateProgramWithSource(context, 1, new String[]{ sourceFile }, null, null);
+				
+		//Build the program
+		CL.clBuildProgram(program, 0, null, null, null, null);
+				
+		//Create the kernel
+		cl_kernel theKernel = CL.clCreateKernel(program, "predicate", null);
+		
+		for(int i = 0; i < 31; i ++) {
+			
+			cl_mem memArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_int * size, ptrArray, null);
+			
+			int[] bitArray = new int[]{i}; 
+			
+			int[] predicate = new int[size];
+			Pointer ptrPredicate = Pointer.to(predicate);
+			
+			cl_mem memPredicate = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * size, null, null);
+			
+			//Set the arguments for the kernel
+			CL.clSetKernelArg(theKernel, 0, Sizeof.cl_mem, Pointer.to(memArray));
+			CL.clSetKernelArg(theKernel, 1, Sizeof.cl_int, Pointer.to(bitArray));
+			CL.clSetKernelArg(theKernel, 2, Sizeof.cl_mem, Pointer.to(memPredicate));
+					
+			//Set the work−item dimensions
+			long[] globalWorkSize = new long[]{size};
+			long[] localWorkSize = new long[]{1};
+			
+			//Execute the kernel
+			CL.clEnqueueNDRangeKernel(commandQueue, theKernel, 1, null, globalWorkSize, localWorkSize,
+					0, null, null);
+					
+			//Read the output data
+			CL.clEnqueueReadBuffer(commandQueue, memPredicate, CL.CL_TRUE, 0, size * Sizeof.cl_int, 
+					ptrPredicate, 0, null, null);
+			
+			sourceFile = readFile("kernels/flip_bits_kernel.cl");
+			program = CL.clCreateProgramWithSource(context, 1, new String[]{ sourceFile }, null, null);
+			CL.clBuildProgram(program, 0, null, null, null, null);
+			theKernel = CL.clCreateKernel(program, "flip", null);
+			
+			int[] flippedPredicate = new int[size];
+			
+			Pointer ptrFlippedPred = Pointer.to(flippedPredicate);
+			
+			cl_mem memFlippedPred = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * size, null, null);
+			
+			CL.clSetKernelArg(theKernel, 0, Sizeof.cl_mem, Pointer.to(memPredicate));
+			CL.clSetKernelArg(theKernel, 1, Sizeof.cl_mem, Pointer.to(memFlippedPred));
+			
+			CL.clEnqueueNDRangeKernel(commandQueue, theKernel, 1, null, globalWorkSize, localWorkSize,
+					0, null, null);
+					
+			CL.clEnqueueReadBuffer(commandQueue, memFlippedPred, CL.CL_TRUE, 0, size * Sizeof.cl_int, 
+					ptrFlippedPred, 0, null, null);
+			
+			int[] predicateScan = blellochScan(predicate, context, commandQueue);
+			int predicateSum = predicateScan[predicateScan.length - 1];
+			int[] predicateSumArray = new int[]{predicateSum};
+			int[] flippedNotPredicateScan = blellochScan(flippedPredicate, context, commandQueue); 
+			int[] result = new int[size];
+			Pointer ptrNotPredScan = Pointer.to(flippedNotPredicateScan);
+			Pointer ptrPredicateScan = Pointer.to(predicateScan);
+			Pointer ptrResult = Pointer.to(result);
+			
+			sourceFile = readFile("kernels/scatter_kernel.cl");
+			program = CL.clCreateProgramWithSource(context, 1, new String[]{ sourceFile }, null, null);
+			CL.clBuildProgram(program, 0, null, null, null, null);
+			theKernel = CL.clCreateKernel(program, "scatter", null);
+						
+			cl_mem memPredicateScan = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_int * size, ptrPredicateScan, null);
+			cl_mem memNotPredicateScan = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_int * size, ptrNotPredScan, null);
+			cl_mem memResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+					Sizeof.cl_int * size, null, null);
+			
+			CL.clSetKernelArg(theKernel, 0, Sizeof.cl_mem, Pointer.to(memArray));
+			CL.clSetKernelArg(theKernel, 1, Sizeof.cl_mem, Pointer.to(memPredicate));
+			CL.clSetKernelArg(theKernel, 2, Sizeof.cl_int, Pointer.to(bitArray));
+			CL.clSetKernelArg(theKernel, 3, Sizeof.cl_mem, Pointer.to(memPredicateScan));
+			CL.clSetKernelArg(theKernel, 4, Sizeof.cl_mem, Pointer.to(memNotPredicateScan));
+			CL.clSetKernelArg(theKernel, 5, Sizeof.cl_int, Pointer.to(predicateSumArray));
+			CL.clSetKernelArg(theKernel, 6, Sizeof.cl_mem, Pointer.to(memResult));
+			
+			
+			CL.clEnqueueNDRangeKernel(commandQueue, theKernel, 1, null, globalWorkSize, localWorkSize,
+					0, null, null);
+					
+			CL.clEnqueueReadBuffer(commandQueue, memResult, CL.CL_TRUE, 0, size * Sizeof.cl_int, 
+					ptrResult, 0, null, null);
+			
+			array = result;
+			CL.clReleaseMemObject(memArray);
+			CL.clReleaseMemObject(memPredicate);
+			CL.clReleaseMemObject(memFlippedPred);
+			CL.clReleaseMemObject(memPredicateScan);
+			CL.clReleaseMemObject(memNotPredicateScan);
+			CL.clReleaseMemObject(memResult);
+		}
+		returnValue = array;
+		
+		CL.clReleaseMemObject(memResultArray);
+		CL.clReleaseKernel(theKernel);
+		CL.clReleaseProgram(program);
+		return returnValue;
+	}
+	
 	public double redEyeRemoval() throws IOException {
 		double returnValue = -1;
 		if(currentImage != null) {
@@ -1827,9 +1918,9 @@ public class ImageHandler {
 			Pointer ptrResult = Pointer.to(result);
 					
 			cl_mem memArrayA = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
-					Sizeof.cl_float * n, ptrArrayA, null);
+					Sizeof.cl_int * n, ptrArrayA, null);
 			cl_mem memResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
-					Sizeof.cl_float * n, ptrResult, null);
+					Sizeof.cl_int * n, ptrResult, null);
 					
 			String source = readFile("kernels/parallel_sepia_kernel.cl");
 			cl_program program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
