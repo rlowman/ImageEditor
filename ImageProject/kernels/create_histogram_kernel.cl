@@ -34,5 +34,5 @@ __kernel void histogram(__global const int * source,
 	int local_row = get_local_id(1);
 	int i = (local_row * k) + local_row;
 	
-	result[(tile_index * 256) + i] = 42;
+	result[(tile_index * 256) + i] = local_histogram[i];
 }

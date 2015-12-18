@@ -836,7 +836,7 @@ public class ImageHandler {
 		
 		//Execute the kernel
 		long startTime = System.nanoTime();
-		CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+		CL.clEnqueueNDRangeKernel(commandQueue, kernel, 2, null, globalWorkSize, localWorkSize,
 				0, null, null);
 			
 		//Read the output data
@@ -844,13 +844,14 @@ public class ImageHandler {
 				ptrCollection, 0, null, null);
 		long returnValue = System.nanoTime() - startTime;
 		
+		int count = 0;
 		for(int g = 0; g < collection.length; g ++) {
-			System.out.print(collection[g]);
-			if(g % 256 == 0 && g > 0) {
-				System.out.println();
-				System.out.println();
+			if(collection[g] != 0) {
+				System.out.println(collection[g]);
+				count ++;
 			}
 		}
+		System.out.println("Count = " + count);
 		
 		int[] resultHistogram = new int[256];
 		
@@ -1854,9 +1855,9 @@ public class ImageHandler {
 			kernel = CL.clCreateKernel(program, "compute", null);
 			
 			for(int i = 0; i < 150; i ++) {
-				int[] ikRed = new int[n];
-				int[] ikGreen = new int[n];
-				int[] ikBlue = new int[n];
+				float[] ikRed = new float[n];
+				float[] ikGreen = new float[n];
+				float[] ikBlue = new float[n];
 				
 				Pointer ptrIkRed = Pointer.to(ikRed);
 				Pointer ptrIkGreen = Pointer.to(ikGreen);
