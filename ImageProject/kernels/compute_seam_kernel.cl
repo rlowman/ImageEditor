@@ -27,6 +27,8 @@ __kernel void compute(__global const int * mask,
 		float c = 0;
 		float d = 4;
 		
+		float s = source[i];
+		
 		if(col > 0) {
 			int left = mask[i-1];
 			int r = (left & RED_MASK) >> RED_OFFSET;
@@ -39,6 +41,7 @@ __kernel void compute(__global const int * mask,
 					b += target[i-1];
 				}
 			}
+			c += s - source[i-1];
 		}
 		else {
 			d--;
@@ -56,6 +59,7 @@ __kernel void compute(__global const int * mask,
 					b += target[i+1];
 				}
 			}
+			c += s - source[i+1]; 
 		}
 		else {
 			d--;
@@ -73,6 +77,7 @@ __kernel void compute(__global const int * mask,
 					b += target[i-width];
 				}
 			}
+			c += s - source[i-width];
 		}
 		else {
 			d--;
@@ -85,15 +90,19 @@ __kernel void compute(__global const int * mask,
 			if(r == 255) { 
 				if(g == 255) {
 					a += guess[i+width];
+					c += s - source[i-1];
 				}
 				else {
 					b += target[i+width];
 				}
 			}
+			c += s - source[i+ width];
 		}
 		else {
 			d--;
 		}
+		
+		value = (a+b+c)/d;
 	}
 	result[i] = value;
 	

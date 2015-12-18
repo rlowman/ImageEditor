@@ -776,14 +776,8 @@ public class ImageHandler {
 		int[] heightArray = new int[]{height};
 		int[] widthArray = new int[]{width};
 		
-		int globalHeight = height;
-		int globalWidth = width;
-		while(globalHeight % k != 0) {
-			globalHeight++;
-		}
-		while(globalWidth % k != 0) {
-			globalWidth ++;
-		}
+		int globalHeight = height + (16 - (height % 16));
+		int globalWidth = width + (16 - (width % 16));
 		
 		int[] globalHeightArray = new int[]{globalHeight};
 		int[] globalWidthArray = new int[]{globalWidth};
@@ -820,10 +814,8 @@ public class ImageHandler {
 		int[] collection = new int[globalHeight * globalWidth];
 		Pointer ptrCollection = Pointer.to(collection);
 		
-		cl_mem memResultInput = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
-				Sizeof.cl_int * n, ptrResult, null);
-		cl_mem memCollectionHistogram = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
-				Sizeof.cl_int * collection.length, null, null);
+		cl_mem memCollectionHistogram = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE | CL.CL_MEM_COPY_HOST_PTR,
+				Sizeof.cl_int * collection.length, ptrCollection, null);
 		
 		source = readFile("kernels/create_histogram_kernel.cl");
 		program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
@@ -832,7 +824,7 @@ public class ImageHandler {
 				
 		kernel = CL.clCreateKernel(program, "histogram", null);
 				
-		CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memResultInput));
+		CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memResult));
 		CL.clSetKernelArg(kernel, 1, Sizeof.cl_int, Pointer.to(globalHeightArray));
 		CL.clSetKernelArg(kernel, 2, Sizeof.cl_int, Pointer.to(globalWidthArray));
 		CL.clSetKernelArg(kernel, 3, Sizeof.cl_int, Pointer.to(heightArray));
@@ -993,7 +985,6 @@ public class ImageHandler {
 		CL.clReleaseMemObject(memArrayA);
 		CL.clReleaseMemObject(memResult);
 		CL.clReleaseProgram(program);
-		CL.clReleaseMemObject(memResultInput);
 		CL.clReleaseMemObject(memCollectionHistogram);
 		CL.clReleaseContext(context);
 		CL.clReleaseCommandQueue(commandQueue);
@@ -1863,10 +1854,71 @@ public class ImageHandler {
 			kernel = CL.clCreateKernel(program, "compute", null);
 			
 			for(int i = 0; i < 150; i ++) {
+				int[] ikRed = new int[n];
+				int[] ikGreen = new int[n];
+				int[] ikBlue = new int[n];
+				
+				Pointer ptrIkRed = Pointer.to(ikRed);
+				Pointer ptrIkGreen = Pointer.to(ikGreen);
+				Pointer ptrIkBlue = Pointer.to(ikBlue);
+				
+				cl_mem memIkRed = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+						Sizeof.cl_float * n, null, null);
+				cl_mem memIkGreen = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+						Sizeof.cl_float * n, null, null);
+				cl_mem memIkBlue = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
+						Sizeof.cl_float * n, null, null);
+				
 				CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memMaskResult));
-				CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memRedSourceResult));
+				CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memRedGuess));
 				CL.clSetKernelArg(kernel, 2, Sizeof.cl_mem, Pointer.to(memRedTargetResult));
+				CL.clSetKernelArg(kernel, 3, Sizeof.cl_mem, Pointer.to(memRedSourceResult));
+				CL.clSetKernelArg(kernel, 4, Sizeof.cl_int, Pointer.to(heightArray));
+				CL.clSetKernelArg(kernel, 5, Sizeof.cl_int, Pointer.to(widthArray));
+				CL.clSetKernelArg(kernel, 6, Sizeof.cl_mem, Pointer.to(memIkRed));
+				
+				long startTime5 = System.nanoTime();
+				CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+						0, null, null);
+					
+				//Read the output data
+				CL.clEnqueueReadBuffer(commandQueue, memIkRed, CL.CL_TRUE, 0, n * Sizeof.cl_float, 
+						ptrIkRed, 0, null, null);
+				runTime += System.nanoTime() - startTime5;
+				
+				CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memMaskResult));
+				CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memGreenGuess));
+				CL.clSetKernelArg(kernel, 2, Sizeof.cl_mem, Pointer.to(memGreenTargetResult));
+				CL.clSetKernelArg(kernel, 3, Sizeof.cl_mem, Pointer.to(memGreenSourceResult));
+				CL.clSetKernelArg(kernel, 4, Sizeof.cl_int, Pointer.to(heightArray));
+				CL.clSetKernelArg(kernel, 5, Sizeof.cl_int, Pointer.to(widthArray));
+				CL.clSetKernelArg(kernel, 6, Sizeof.cl_mem, Pointer.to(memIkGreen));
+				
+				long startTime6 = System.nanoTime();
+				CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+						0, null, null);
+					
+				//Read the output data
+				CL.clEnqueueReadBuffer(commandQueue, memIkGreen, CL.CL_TRUE, 0, n * Sizeof.cl_float, 
+						ptrIkGreen, 0, null, null);
+				runTime += System.nanoTime() - startTime6;
+				
+				CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memMaskResult));
+				CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memBlueGuess));
+				CL.clSetKernelArg(kernel, 2, Sizeof.cl_mem, Pointer.to(memBlueTargetResult));
 				CL.clSetKernelArg(kernel, 3, Sizeof.cl_mem, Pointer.to(memBlueSourceResult));
+				CL.clSetKernelArg(kernel, 4, Sizeof.cl_int, Pointer.to(heightArray));
+				CL.clSetKernelArg(kernel, 5, Sizeof.cl_int, Pointer.to(widthArray));
+				CL.clSetKernelArg(kernel, 6, Sizeof.cl_mem, Pointer.to(memIkBlue));
+				
+				long startTime7 = System.nanoTime();
+				CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+						0, null, null);
+					
+				//Read the output data
+				CL.clEnqueueReadBuffer(commandQueue, memIkGreen, CL.CL_TRUE, 0, n * Sizeof.cl_float, 
+						ptrIkGreen, 0, null, null);
+				runTime += System.nanoTime() - startTime7;
 				
 				
 			}
