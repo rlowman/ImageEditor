@@ -1291,7 +1291,6 @@ public class ImageHandler {
 	public int[] parrallelSort(int[] array, cl_context context, cl_command_queue commandQueue) {
 		int size = array.length;
 		int[] returnValue = new int[size];
-		Pointer ptrReturn = Pointer.to(returnValue);
 		Pointer ptrArray = Pointer.to(array);
 
 		cl_mem memResultArray = CL.clCreateBuffer(context, CL.CL_MEM_READ_WRITE,
@@ -1636,14 +1635,10 @@ public class ImageHandler {
 			}
 			
 			float largest = 0;
-			float position = 0;
-			int count = 0;
 			for(float temp : finalC) {
 				if(temp >= largest) {
-					position = count;
 					largest = temp;
 				}
-				count ++;
 			}
 			
 			//Change Pixels Here
@@ -1791,13 +1786,13 @@ public class ImageHandler {
 					0, null, null);
 				
 			//Read the output data
-			CL.clEnqueueReadBuffer(commandQueue, memRedTargetResult, CL.CL_TRUE, 0, n * Sizeof.cl_float, 
+			CL.clEnqueueReadBuffer(commandQueue, memRedTargetResult, CL.CL_TRUE, 0, n * Sizeof.cl_int, 
 					ptrTgtRedChannel, 0, null, null);
 			
-			CL.clEnqueueReadBuffer(commandQueue, memGreenTargetResult, CL.CL_TRUE, 0, n* Sizeof.cl_float,
+			CL.clEnqueueReadBuffer(commandQueue, memGreenTargetResult, CL.CL_TRUE, 0, n* Sizeof.cl_int,
 					ptrTgtGreenChannel, 0, null, null);
 			
-			CL.clEnqueueReadBuffer(commandQueue, memBlueTargetResult, CL.CL_TRUE, 0, n* Sizeof.cl_float,
+			CL.clEnqueueReadBuffer(commandQueue, memBlueTargetResult, CL.CL_TRUE, 0, n* Sizeof.cl_int,
 					ptrTgtBlueChannel, 0, null, null);
 			runTime += System.nanoTime() - startTime3;
 			
@@ -1819,7 +1814,7 @@ public class ImageHandler {
 			source = readFile("kernels/guess_kernel.cl");
 			program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
 			
-			kernel = CL.clCreateKernel(program, "guess", null);
+			kernel = CL.clCreateKernel(program, "initial_guess", null);
 			
 			CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memMaskResult));
 			CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memRedSourceResult));

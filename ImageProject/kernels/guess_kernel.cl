@@ -1,4 +1,4 @@
-__kernel void guess(__global const int * mask,
+__kernel void initial_guess(__global const int * mask,
 					__global const int * red_source,
 					__global const int * green_source,
 					__global const int * blue_source,
@@ -23,15 +23,15 @@ __kernel void guess(__global const int * mask,
 	int r = (pixel & RED_MASK) >> RED_OFFSET;
 	int g = (pixel & GREEN_MASK) >> GREEN_OFFSET;
 	
-	int red_guess = red_target[i];
-	int green_guess = green_target[i];
-	int blue_guess = blue_target[i];
+	float red_guess = (float) red_target[i];
+	float green_guess = (float) green_target[i];
+	float blue_guess = (float) blue_target[i];
 	
 	if(r > 0) {
-		if(g > 0){
-			red_guess = red_source[i];
-			green_guess = green_source[i];
-			blue_guess = blue_source[i];
+		if(g > 0) {
+			red_guess = (float) red_source[i];
+			green_guess = (float) green_source[i];
+			blue_guess = (float) blue_source[i];
 		}
 	}
 	red_result[i] = red_guess;

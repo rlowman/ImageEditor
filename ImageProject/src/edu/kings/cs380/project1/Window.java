@@ -107,6 +107,29 @@ public class Window implements ActionListener {
 	
 	private JButton test;
 	
+	private JMenu zoom;
+	
+	private ButtonGroup zoomGroup;
+	
+	private JRadioButtonMenuItem normal;
+	
+	private JRadioButtonMenuItem plusFifty;
+	
+	private JRadioButtonMenuItem doubleZoom;
+	
+	private JRadioButtonMenuItem plusTwoFifty;
+	
+	private JRadioButtonMenuItem tripleZoom;
+	
+	private JRadioButtonMenuItem plusOneFifty;
+	
+	private JRadioButtonMenuItem quadZoom;
+	
+	private JRadioButtonMenuItem plusThreeFifty;
+	
+	private JRadioButtonMenuItem fiveZoom;
+	
+	private 
 	/**HashMap of all the Devices.*/
 	private HashMap<cl_device_id, cl_platform_id> theDevices;
 	
