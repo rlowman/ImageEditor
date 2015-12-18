@@ -13,14 +13,14 @@ __kernel void compute(__global const int * mask,
 	int i = get_global_id(0);
 	
 	int col = i % width;
-	int row = i / widht;
+	int row = i / width;
 	
 	int pixel = mask[i];
 	
 	int red = (pixel & RED_MASK) >> RED_OFFSET;
 	int green = (pixel & GREEN_MASK) >> GREEN_OFFSET;
 	
-	float value = pixel;
+	float value = guess[i];
 	if(red > 0 && green > 0) {
 		float a = 0; 
 		float b = 0;

@@ -99,37 +99,38 @@ public class Window implements ActionListener {
 	/**Button that removes the red eye from an image*/
 	private JButton redEye;
 	
+	/**Button for seamless image clone*/
 	private JButton imageClone;
 	
+	/**Button for sequential sepia*/
 	private JButton sepiaSeq;
 	
+	/**Button for parallel sepia*/
 	private JButton sepiaPar;
 	
-	private JButton test;
 	
-	private JMenu zoom;
+//	private JMenu zoom;
+//	
+//	private ButtonGroup zoomGroup;
+//	
+//	private JRadioButtonMenuItem normal;
+//	
+//	private JRadioButtonMenuItem plusFifty;
+//	
+//	private JRadioButtonMenuItem doubleZoom;
+//	
+//	private JRadioButtonMenuItem plusOneFifty;
+//	
+//	private JRadioButtonMenuItem tripleZoom;
+//	
+//	private JRadioButtonMenuItem plusTwoFifty;
+//	
+//	private JRadioButtonMenuItem quadZoom;
+//	
+//	private JRadioButtonMenuItem plusThreeFifty;
+//	
+//	private JRadioButtonMenuItem fiveZoom;
 	
-	private ButtonGroup zoomGroup;
-	
-	private JRadioButtonMenuItem normal;
-	
-	private JRadioButtonMenuItem plusFifty;
-	
-	private JRadioButtonMenuItem doubleZoom;
-	
-	private JRadioButtonMenuItem plusTwoFifty;
-	
-	private JRadioButtonMenuItem tripleZoom;
-	
-	private JRadioButtonMenuItem plusOneFifty;
-	
-	private JRadioButtonMenuItem quadZoom;
-	
-	private JRadioButtonMenuItem plusThreeFifty;
-	
-	private JRadioButtonMenuItem fiveZoom;
-	
-	private 
 	/**HashMap of all the Devices.*/
 	private HashMap<cl_device_id, cl_platform_id> theDevices;
 	
@@ -213,8 +214,6 @@ public class Window implements ActionListener {
 		sepiaSeq.addActionListener(this);
 		sepiaPar = new JButton("Sepia Parallel");
 		sepiaPar.addActionListener(this);
-		test = new JButton("Sort Test");
-		test.addActionListener(this);
 		buttonPanel.add(grayscaleButton);
 		buttonPanel.add(grayscaleButtonParallel);
 		buttonPanel.add(seqBlur);
@@ -225,7 +224,6 @@ public class Window implements ActionListener {
 		buttonPanel.add(imageClone);
 		buttonPanel.add(sepiaSeq);
 		buttonPanel.add(sepiaPar);
-		buttonPanel.add(test);
 		mainFrame.add(buttonPanel);
 		mainFrame.add(drawingPanel);
 		
@@ -283,13 +281,6 @@ public class Window implements ActionListener {
 				JOptionPane.showMessageDialog(mainFrame, "The File cound not be saved", "Error", JOptionPane.ERROR_MESSAGE);
 			}
 		}
-		else if(ae.getSource() == test) {
-			int[] testArray = new int[]{7, 3, 19, 4, 6, 19, 10, 1, 2, 9, 7, 12, 11, 3};
-			int[] result = handler.parrallelSort(testArray, handler.getContext(), handler.getCommandQueue());
-			for(int temp : result) {
-				System.out.print(temp + " ");
-			}
-		}
 		else if(ae.getSource() == saveAs) {
 			JFileChooser chooser = new JFileChooser();
 			if(chooser.showSaveDialog(mainFrame) == JFileChooser.APPROVE_OPTION) {
@@ -310,7 +301,8 @@ public class Window implements ActionListener {
 		else if(ae.getSource() == grayscaleButtonParallel) {
 			long temp = handler.grayScaleParallel();
 			if(temp > 0) {
-				timeLabel.setText("Parallel Grayscale Algorithm Time in nanoseconds:\n" + temp);
+				double time = temp / 1000000;
+				timeLabel.setText("Parallel Grayscale Algorithm Time in ms:\n" + time);
 				mainFrame.repaint();
 			}
 			else {	
@@ -440,16 +432,51 @@ public class Window implements ActionListener {
 			}
 		}
 		else if(ae.getSource() instanceof JRadioButtonMenuItem){
-			boolean found = false;
-			Iterator<JRadioButtonMenuItem> theIter = buttons.keySet().iterator();
-			while(theIter.hasNext() && !found) {
-				JRadioButtonMenuItem temp = theIter.next();
-				if(ae.getSource() == temp) {
-					cl_device_id newDevice = buttons.get(temp);
-					handler.setSelectedDevice(newDevice);
-					handler.setSelectedPlatform(theDevices.get(newDevice));
+//			if(ae.getSource() == normal){
+//				
+//			}
+//			else if(ae.getSource() == plusFifty){
+//				
+//			}
+//			else if(ae.getSource() == plusOneFifty){
+//				
+//			}
+//			else if(ae.getSource() == plusTwoFifty){
+//				handler.adjustSize(3);
+//				mainFrame.repaint();
+//			}
+//			else if(ae.getSource() == plusThreeFifty){
+//				handler.adjustSize(3.5);
+//				mainFrame.repaint();
+//			}
+//			else if(ae.getSource() == doubleZoom){
+//				handler.adjustSize(2);
+//				mainFrame.repaint();
+//			}
+//			else if(ae.getSource() == tripleZoom){
+//				handler.adjustSize(3);
+//				mainFrame.repaint();
+//			}
+//			else if(ae.getSource() == quadZoom){
+//				handler.adjustSize(4);
+//				mainFrame.repaint();
+//			}
+//			else if(ae.getSource() == fiveZoom){
+//				handler.adjustSize(500);
+//				mainFrame.repaint();
+//			}
+//			else{
+				boolean found = false;
+				Iterator<JRadioButtonMenuItem> theIter = buttons.keySet().iterator();
+				while(theIter.hasNext() && !found) {
+					JRadioButtonMenuItem temp = theIter.next();
+					if(ae.getSource() == temp) {
+						cl_device_id newDevice = buttons.get(temp);
+						handler.setSelectedDevice(newDevice);
+						handler.setSelectedPlatform(theDevices.get(newDevice));
+					}
 				}
-			}
+//			}
 		}
 	}
 	

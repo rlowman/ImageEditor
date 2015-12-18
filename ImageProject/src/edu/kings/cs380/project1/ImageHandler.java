@@ -36,8 +36,10 @@ import org.jocl.cl_program;
  */
 public class ImageHandler {
 	
+	/**Depth of the sepia algorithm*/
 	private static final int SEPIA_DEPTH = 20;
 	
+	/**Intensity of the sepia algorithm*/
 	private static final int SEPIA_INTENSITY = 30;
 	
 	/**The frame to draw images to.*/
@@ -55,11 +57,9 @@ public class ImageHandler {
 	/**The id of the selected platform.*/
 	private cl_platform_id selectedPlatform;
 	
-	private cl_context_properties contextProperties;
-	
-	private cl_context context;
-	
-	private cl_command_queue commandQueue;
+//	private int currentHeight;
+//	
+//	private int currentWidth;
 	
 	/**
 	 * Constructor for the ImageHandler class.
@@ -74,24 +74,6 @@ public class ImageHandler {
 		currentFile = null;
 		selectedDevice = theId;
 		selectedPlatform = thePlatform;
-		
-		contextProperties = new cl_context_properties();
-		contextProperties.addProperty(CL.CL_CONTEXT_PLATFORM, selectedPlatform);
-		
-		context = CL.clCreateContext(
-		contextProperties, 1,
-			new cl_device_id[]{selectedDevice},
-			null, null, null);		
-		
-		commandQueue = CL.clCreateCommandQueue(context, selectedDevice, 0, null);
-	}
-	
-	public cl_context getContext() {
-		return context;
-	}
-
-	public cl_command_queue getCommandQueue() {
-		return commandQueue;
 	}
 
 	/**
@@ -627,11 +609,10 @@ public class ImageHandler {
 	}
 	
 	/**
-	 * Creates the filter for the blur function 
+	 * Creates the filter for the blur function.
 	 * 
-	 * @param theBlurWidth
-	 * @param sigma
-	 * @return
+	 * @param theBlurWidth the width of the filter
+	 * @return the filter
 	 */
 	private double[][] createBlurFilter(int theBlurWidth, int sigma) {
 		int rowBlur = (-1 * (theBlurWidth)) / 2;
@@ -656,6 +637,13 @@ public class ImageHandler {
 		return filter;
 	}
 	
+	/**
+	 * Helper method for the custom blur filter.
+	 * @param valueOne the first value
+	 * @param valueTwo the second value
+	 * @param theSigma the sigma value
+	 * @return the value of the gaussin function
+	 */
 	private double gaussinFunction(int valueOne, int valueTwo, int theSigma) {
 		double fixerOne = valueOne;
 		double fixerTwo = valueTwo;
@@ -664,6 +652,10 @@ public class ImageHandler {
 		return returnValue;
 	}
 
+	/**
+	 * Equalizes and image sequentially.
+	 * @return the run time
+	 */
 	public double sequentialEqualization() {
 		double returnValue = -1;
 		int ALPHA_MASK = 0xff000000;
@@ -747,6 +739,10 @@ public class ImageHandler {
 		return returnValue;
 	}
 
+	/**
+	 * Equalizes the image by parallel computing.
+	 * @return the run time
+	 */
 	public double parallelEqualization() {
 		
 		//Initialize the context properties	
@@ -996,6 +992,10 @@ public class ImageHandler {
 		return returnValue;
 	}
 	
+	/**
+	 * The slower unoptimized version of parallel equalization.
+	 * @return the run time
+	 */
 	public double UnoptimizedParallelEqualization() {
 		
 		//Initialize the context properties	
@@ -1193,6 +1193,14 @@ public class ImageHandler {
 		return returnValue;
 	}
 	
+	/**
+	 * Sets an array of values using parallel computing.
+	 * @param setValue the value to set to the array
+	 * @param size the size of the array
+	 * @param context the context
+	 * @param commandQueue the command queue
+	 * @return the array of set values
+	 */
 	private int[] parallelArraySet(int setValue, int size, cl_context context, cl_command_queue commandQueue) {
 		int[] source = new int[size];
 		int[] returnValue = new int[size];
@@ -1239,6 +1247,13 @@ public class ImageHandler {
 		return returnValue;
 	}
 	
+	/**
+	 * Scans an array using the blelloch algorithm.
+	 * @param theArray the array to scan
+	 * @param context the context
+	 * @param commandQueue the command queue
+	 * @return the scanned array
+	 */
 	protected int[] blellochScan(int[] theArray, cl_context context, cl_command_queue commandQueue){
 		int size = theArray.length;
 		int[] source = new int[size];
@@ -1288,6 +1303,13 @@ public class ImageHandler {
 		return returnValue;
 	}
 	
+	/**
+	 * Sorts an array using radix sort.
+	 * @param array the array to sort
+	 * @param context the context
+	 * @param commandQueue the command queue
+	 * @return the sorted array
+	 */
 	public int[] parrallelSort(int[] array, cl_context context, cl_command_queue commandQueue) {
 		int size = array.length;
 		int[] returnValue = new int[size];
@@ -1419,6 +1441,11 @@ public class ImageHandler {
 		return returnValue;
 	}
 	
+	/**
+	 * Removes the red eye from an image.
+	 * @return the run time
+	 * @throws IOException if the template cannot be found
+	 */
 	public double redEyeRemoval() throws IOException {
 		double returnValue = -1;
 		if(currentImage != null) {
@@ -1647,6 +1674,11 @@ public class ImageHandler {
 		return returnValue;
 	}
 
+	/**
+	 * Clones an image without a seam.
+	 * @param tempImage the source image
+	 * @return the run time
+	 */
 	public double seamlessImageClone(BufferedImage tempImage) {
 		double returnValue = -1;
 		if(currentImage != null) {
@@ -1814,6 +1846,8 @@ public class ImageHandler {
 			source = readFile("kernels/guess_kernel.cl");
 			program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
 			
+			CL.clBuildProgram(program, 0, null, null, null, null);
+			
 			kernel = CL.clCreateKernel(program, "initial_guess", null);
 			
 			CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memMaskResult));
@@ -1846,6 +1880,8 @@ public class ImageHandler {
 			
 			source = readFile("kernels/compute_seam_kernel.cl");
 			program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
+			
+			CL.clBuildProgram(program, 0, null, null, null, null);
 			
 			kernel = CL.clCreateKernel(program, "compute", null);
 			
@@ -1937,6 +1973,8 @@ public class ImageHandler {
 			source = readFile("kernels/seam_combine_kernel.cl");
 			program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
 			
+			CL.clBuildProgram(program, 0, null, null, null, null);
+			
 			kernel = CL.clCreateKernel(program, "seam_combine", null);
 
 			CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memRedGuess));
@@ -1977,6 +2015,10 @@ public class ImageHandler {
 		return returnValue;
 	}
 	
+	/**
+	 * Creates a sepia image sequantially.
+	 * @return the run time
+	 */
 	public double sepiaSequential() {
 		double returnValue = -1;
 		if(currentImage != null) {
@@ -2006,6 +2048,10 @@ public class ImageHandler {
 		return returnValue;
 	}
 	
+	/**
+	 * Creates a sepia image by parallel computing.
+	 * @return the run time
+	 */
 	public double sepiaParallel() {
 		double returnValue = -1;
 		if(currentImage != null) {
@@ -2079,6 +2125,14 @@ public class ImageHandler {
 		}
 		return returnValue;
 	}
+
+//	public void adjustSize(double i) {
+//		Image temp = currentImage.getScaledInstance((int)(currentWidth * i), currentHeight, Image.SCALE_SMOOTH);
+//		
+//		DataBuffer sourceDataBuffer = sourceRaster.getDataBuffer();
+//		DataBufferInt sourceBytes = (DataBufferInt)sourceDataBuffer;
+//		int sourceData[] = sourceBytes.getData();
+//	}
 	
 //	private float[] normalizedCrossCorrelationSequential(int[] templateValues, int[] imageValues,
 //			int height, int width, int templateHeight, int templateWidth) throws IOException {

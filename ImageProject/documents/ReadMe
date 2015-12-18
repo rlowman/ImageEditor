@@ -5,17 +5,17 @@ the fact that more options besides grayscale will become available, which can be
 grayscale button. The picture can be opened from a .png file, edited, then saved to the same file. The program has 
 two choices for grayscaling, using either parallel programming or sequential. The program also has two choices for 
 blurring an image, also using either parallel or sequential. Equalization was implemented and also has the option to 
-either choose parallel or sequantial computing and then was optimized
+either choose parallel or sequential computing and then was optimized. Red Eye Removal is not fully implemented and 
+will not produce any results. Radix Sort is featured however it is not fully working. The last part implemented was the
+seamless image clone which does not produce the right image.
 
 File Types Supported: PNG
 
 Bugs: Once again, a big fallback this program has is that you cannot undo any action, so any accidental move that needs
-to be fixed is requird to completly reload the picture, losing all progress made. 
+to be fixed is requird to completly reload the picture, losing all progress made. Also, be careful when entering the blur
+filter values I rushed through that part of actually recieving the input values. Radix Sort does not work.
 
-The parallel equalization isn't necessarily all parallel. One kernel, the kernel that creates the modified list of 
-grayscale values from the input/output histogram, pretty much the last step, does not work. This is very annoying since 
-this is a simple kernel and is probably a very stupid error I am making, however I cannot seem to debug it. One loop
-was added to do this part sequentially and the picture is equalized fine.
+Extras: Sepia, Custom Blur Filter
 
 										*UPDATE PHASE 5*
 I could not get my optimized algorithm to produce a correct histogram and theres probably a couple reasons why. First,
@@ -32,4 +32,9 @@ code to crash, and I have ran out of time to de-bug my code.
 The code was not finished as I am getting the wrong values for when I run it sequentially, which I still have but is 
 commented out. Radix Sort has also not been implemented so for this phase to be complete that also needs to be fixed.
 
-
+										*UPDATE PHASe &*
+Well I didn't get nearly as far as I wanted to but I guess thats how it goes. Seamless does not work fully I ran out
+of time to really debug it. Optimized histogram is close, but there are still many more issues to fix. Sepia has been 
+implemented, as well as the extra from the blur phase. To make sure my image clone recieves the right information, first
+open the target image of the pool, then click on the seamless button and it will ask you which photo you want as the source.
+Radix sort is implemented however it has a lot of issues. Issues with blur have been fixed. 
