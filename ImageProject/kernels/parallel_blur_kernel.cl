@@ -6,6 +6,7 @@ blur_kernel (__global const float * filter,
 			 __global int * red_blurred,
 	 		 __global int * green_blurred,
 			 __global int * blue_blurred, 
+			 const int blurWidth,
 			 const int width,
 			 const int height)
 {
@@ -17,11 +18,12 @@ blur_kernel (__global const float * filter,
 	float redBlur = 0;
 	float blueBlur = 0;
 	float greenBlur = 0;
-	for(int filterRow = 0; filterRow < 5; filterRow ++) {
-		for(int filterCol = 0; filterCol < 5; filterCol ++) {
-			int filterIndex = (filterRow * 5) + filterCol;
-			int r = row - filterRow - 2;
-			int c = col - filterCol - 2;
+	int space = blurWidth / 2;
+	for(int filterRow = -1 * space; filterRow <= space; filterRow ++) {
+		for(int filterCol = -1 * space; filterCol <= space; filterCol ++) {
+			int filterIndex = ((filterRow + space) * blurWidth) + (filterCol + space);
+			int r = row - filterRow;
+			int c = col - filterCol;
 			r = max(0, min(r, height));
 			c = max(0, min(c, width));
 			int i = (r * width) + c;

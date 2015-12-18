@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Scanner;
 
 import javax.imageio.ImageIO;
 import javax.swing.ButtonGroup;
@@ -272,7 +273,12 @@ public class Window implements ActionListener {
 			}
 		}
 		else if(ae.getSource() == seqBlur) {
-			long temp = handler.sequentialBlur();
+			Scanner input = new Scanner(System.in);
+			System.out.println("Enter the size of the filter for the blur: ");
+			int blurWidth = input.nextInt();
+			System.out.println("Enter the sigma for the blur: ");
+			int sigma = input.nextInt();
+			long temp = handler.sequentialBlur(blurWidth, sigma);
 			if(temp > 0) {
 				long runTime = temp / 1000000;
 				timeLabel.setText("Sequential Blur Algorithm Time in milliseconds:\n" + runTime);
@@ -283,7 +289,12 @@ public class Window implements ActionListener {
 			}
 		}
 		else if(ae.getSource() == parallelBlur){
-			long temp = handler.parallelBlur();
+			Scanner input = new Scanner(System.in);
+			System.out.println("Enter the size of the filter for the blur: ");
+			int blurWidth = input.nextInt();
+			System.out.println("Enter the sigma for the blur: ");
+			int sigma = input.nextInt();
+			long temp = handler.parallelBlur(blurWidth, sigma);
 			if(temp > 0) {
 				timeLabel.setText("Parallel Blur Algorithm Time in nanoseconds:\n" + temp);
 				mainFrame.repaint();

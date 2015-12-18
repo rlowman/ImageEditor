@@ -242,7 +242,7 @@ public class ImageHandler {
 	 * 
 	 * @return the time in nanoseconds
 	 */
-	public long sequentialBlur() {
+	public long sequentialBlur(int blurWidth, int sigma) {
 		long returnValue = -1;
 		if(currentImage != null) {
 			long startTime = System.nanoTime();
@@ -267,23 +267,24 @@ public class ImageHandler {
 					pixelCount++;
 				}
 			}
-			double[][] filter = createBlurFilter(5, 2);
+			double[][] filter = createBlurFilter(blurWidth, sigma);
 			for(int row = 0; row < height; row ++) {
 				for(int col = 0; col < width; col ++) {
 					int index = (row * width) + col;
 					double redBlur = 0;
 					double blueBlur = 0;
 					double greenBlur = 0;
-					for(int filterRow = 0; filterRow < 5; filterRow ++) {
-						for(int filterCol = 0; filterCol < 5; filterCol ++) {
-							int r = Math.abs(row - filterRow - 2);
-							int c = Math.abs(col - filterCol - 2);
+					int space = blurWidth/2;
+					for(int filterRow = -1 * space; filterRow <= space; filterRow ++) {
+						for(int filterCol = -1 * space; filterCol <= space; filterCol ++) {
+							int r = row - filterRow;
+							int c = col - filterCol;
 							r = Math.max(0, Math.min(r, height - 1));
 							c = Math.max(0, Math.min(c, width - 1));
 							int i = (r * width) + c;
-							redBlur += redValues[i] * filter[filterRow][filterCol];
-							greenBlur += greenValues[i] * filter[filterRow][filterCol];
-							blueBlur += blueValues[i] * filter[filterRow][filterCol];
+							redBlur += redValues[i] * filter[filterRow + space][filterCol + space];
+							greenBlur += greenValues[i] * filter[filterRow + space][filterCol + space];
+							blueBlur += blueValues[i] * filter[filterRow + space][filterCol + space];
 						}
 					}
 					redBlurred[index] = (int)redBlur;
@@ -317,7 +318,7 @@ public class ImageHandler {
 	 * 
 	 * @return the time in nanoseconds
 	 */
-	public long parallelBlur() {
+	public long parallelBlur(int blurWidth, int sigma) {
 		long returnValue = -1;
 		if(currentImage != null) {
 			//Initialize the context properties	
@@ -390,8 +391,8 @@ public class ImageHandler {
 			long runTime = System.nanoTime() - startTime;
 			
 			//Start of second kernel
-			double[][] filter = createBlurFilter(5,2);
-			float[] paramFilter = new float[25];
+			double[][] filter = createBlurFilter(blurWidth,sigma);
+			float[] paramFilter = new float[blurWidth * blurWidth];
 			int count = 0;
 			for(int i = 0; i < filter.length; i ++) {
 				for(int m = 0; m < filter[i].length; m ++) {
@@ -399,7 +400,7 @@ public class ImageHandler {
 					count ++;
 				}
 			}
-			
+			int[] blurWidthArray = new int[]{blurWidth};
 			int[]redBlurred = new int[n];
 			int[]blueBlurred = new int[n];
 			int[]greenBlurred = new int[n];
@@ -441,8 +442,9 @@ public class ImageHandler {
 			CL.clSetKernelArg(blurKernel, 4, Sizeof.cl_mem, Pointer.to(memRedBlurredResult));
 			CL.clSetKernelArg(blurKernel, 5, Sizeof.cl_mem, Pointer.to(memGreenBlurredResult));
 			CL.clSetKernelArg(blurKernel, 6, Sizeof.cl_mem, Pointer.to(memBlueBlurredResult));
-			CL.clSetKernelArg(blurKernel, 7, Sizeof.cl_int, Pointer.to(width));
-			CL.clSetKernelArg(blurKernel, 8, Sizeof.cl_int, Pointer.to(height));
+			CL.clSetKernelArg(blurKernel, 7, Sizeof.cl_int, Pointer.to(blurWidthArray));
+			CL.clSetKernelArg(blurKernel, 8, Sizeof.cl_int, Pointer.to(width));
+			CL.clSetKernelArg(blurKernel, 9, Sizeof.cl_int, Pointer.to(height));
 			
 			long secondStartTime = System.nanoTime();
 			CL.clEnqueueNDRangeKernel(commandQueue, blurKernel, 1, null, globalWorkSize, localWorkSize,
