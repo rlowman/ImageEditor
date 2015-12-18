@@ -36,6 +36,10 @@ import org.jocl.cl_program;
  */
 public class ImageHandler {
 	
+	private static final int SEPIA_DEPTH = 20;
+	
+	private static final int SEPIA_INTENSITY = 30;
+	
 	/**The frame to draw images to.*/
 	private ImagePanel frame;
 	
@@ -1759,6 +1763,109 @@ public class ImageHandler {
 				
 			}
 			
+			returnValue = runTime;
+		}
+		return returnValue;
+	}
+	
+	public double sepiaSequential() {
+		double returnValue = -1;
+		if(currentImage != null) {
+			double startTime = System.nanoTime();
+			int width = currentImage.getWidth ();
+			int height = currentImage.getHeight ();
+			for(int row = 0 ; row < height ; row ++) {
+				for (int column = 0; column < width; column ++) {
+					Color c = new Color (currentImage.getRGB(column, row));
+					int r = c. getRed();
+					int g = c.getGreen();
+					int b = c. getBlue();
+					int alpha = c.getAlpha();
+					int average = (int) (0.299 * r + 0.587 * g + 0.114 * b);
+					int red = average + (SEPIA_DEPTH * 2);
+					int blue = average - SEPIA_INTENSITY;
+					int green = average + SEPIA_DEPTH;
+					red = Math.max(0, Math.min(red, 255));
+					green = Math.max(0, Math.min(green, 255));
+					blue = Math.max(0, Math.min(blue, 255));
+					Color newColor = new Color(red, green, blue, alpha);
+					currentImage.setRGB(column, row, newColor.getRGB());
+				}
+			}
+			returnValue = System.nanoTime() - startTime;
+		}
+		return returnValue;
+	}
+	
+	public double sepiaParallel() {
+		double returnValue = -1;
+		if(currentImage != null) {
+			//Initialize the context properties	
+			cl_context_properties contextProperties = new cl_context_properties();
+			contextProperties.addProperty(CL.CL_CONTEXT_PLATFORM, selectedPlatform);
+					
+			//Create a context for the selected device
+			cl_context context = CL.clCreateContext(
+			contextProperties, 1,
+				new cl_device_id[]{selectedDevice},
+				null, null, null);		
+			
+					
+			//Create a command queue for the selected device
+			cl_command_queue commandQueue = CL.clCreateCommandQueue(context, selectedDevice, 0, null);
+
+			//Get Raster information for array
+			WritableRaster sourceRaster = currentImage.getRaster();
+			DataBuffer sourceDataBuffer = sourceRaster.getDataBuffer();
+			DataBufferInt sourceBytes = (DataBufferInt)sourceDataBuffer;
+			int sourceData[] = sourceBytes.getData();
+			int n = sourceData.length;
+			int[]result = new int[n];
+					
+			//Create pointers to arrays to give to kernel
+			Pointer ptrArrayA = Pointer.to(sourceData);
+			Pointer ptrResult = Pointer.to(result);
+					
+			cl_mem memArrayA = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_float * n, ptrArrayA, null);
+			cl_mem memResult = CL.clCreateBuffer(context, CL.CL_MEM_READ_ONLY | CL.CL_MEM_COPY_HOST_PTR,
+					Sizeof.cl_float * n, ptrResult, null);
+					
+			String source = readFile("kernels/parallel_sepia_kernel.cl");
+			cl_program program = CL.clCreateProgramWithSource(context, 1, new String[]{ source }, null, null);
+					
+			CL.clBuildProgram(program, 0, null, null, null, null);
+					
+			cl_kernel kernel = CL.clCreateKernel(program, "parallel_sepia", null);
+					
+			CL.clSetKernelArg(kernel, 0, Sizeof.cl_mem, Pointer.to(memArrayA));
+			CL.clSetKernelArg(kernel, 1, Sizeof.cl_mem, Pointer.to(memResult));
+					
+			long[] globalWorkSize = new long[]{n};
+			long[] localWorkSize = new long[]{1};
+					
+			long startTime = System.nanoTime();
+			CL.clEnqueueNDRangeKernel(commandQueue, kernel, 1, null, globalWorkSize, localWorkSize,
+					0, null, null);
+			long runTime = System.nanoTime() - startTime;
+	
+					
+			//Read the output data
+			CL.clEnqueueReadBuffer(commandQueue, memResult, CL.CL_TRUE, 0, n * Sizeof.cl_int, 
+					ptrResult, 0, null, null);
+			
+			//Write the results to the BufferedImage named result
+			DataBufferInt resultDataBuffer = new DataBufferInt(result, result.length);
+			Raster resultRaster = Raster.createRaster(currentImage.getSampleModel(), resultDataBuffer, new Point(0, 0));
+			currentImage.setData(resultRaster);
+					
+			//Clean-up
+			CL.clReleaseKernel(kernel);
+			CL.clReleaseProgram(program);
+			CL.clReleaseMemObject(memArrayA);
+			CL.clReleaseMemObject(memResult);
+			CL.clReleaseCommandQueue(commandQueue);
+			CL.clReleaseContext(context);
 			returnValue = runTime;
 		}
 		return returnValue;

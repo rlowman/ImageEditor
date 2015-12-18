@@ -101,6 +101,10 @@ public class Window implements ActionListener {
 	
 	private JButton imageClone;
 	
+	private JButton sepiaSeq;
+	
+	private JButton sepiaPar;
+	
 	/**HashMap of all the Devices.*/
 	private HashMap<cl_device_id, cl_platform_id> theDevices;
 	
@@ -180,6 +184,10 @@ public class Window implements ActionListener {
 		redEye.addActionListener(this);
 		imageClone = new JButton("Seamless Image Clone");
 		imageClone.addActionListener(this);
+		sepiaSeq = new JButton("Sepia Sequential");
+		sepiaSeq.addActionListener(this);
+		sepiaPar = new JButton("Sepia Parallel");
+		sepiaPar.addActionListener(this);
 		buttonPanel.add(grayscaleButton);
 		buttonPanel.add(grayscaleButtonParallel);
 		buttonPanel.add(seqBlur);
@@ -188,6 +196,8 @@ public class Window implements ActionListener {
 		buttonPanel.add(parallelEqualization);
 		buttonPanel.add(optimized);
 		buttonPanel.add(imageClone);
+		buttonPanel.add(sepiaSeq);
+		buttonPanel.add(sepiaPar);
 		mainFrame.add(buttonPanel);
 		mainFrame.add(drawingPanel);
 		
@@ -371,6 +381,20 @@ public class Window implements ActionListener {
 					e.printStackTrace();
 				}
 			}
+		}
+		else if(ae.getSource() == sepiaSeq) {
+			double time = handler.sepiaSequential();
+			if(time > 0) {
+				double ms = time / 1000000;
+				timeLabel.setText("Sepia Sequential Algorithm ms:\n " + ms + " ms");
+				mainFrame.repaint();
+			}
+			else {
+				JOptionPane.showMessageDialog(mainFrame, "No Image Selected", "Error", JOptionPane.ERROR_MESSAGE);
+			}
+		}
+		else if(ae.getSource() == sepiaPar) {
+			
 		}
 		else if(ae.getSource() instanceof JRadioButtonMenuItem){
 			boolean found = false;
