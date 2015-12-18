@@ -1,31 +1,37 @@
 __kernel void histogram(__global const int * source,
 						const int height, const int width,
-						__local int * tile,
+						const int image_height, const int image_width,
 						__global int * result) {
 	
-	const int K = 16;
+	const int k = 16;
 	__local int local_histogram[256];
-	const int SIZE = 256;
-	int col = get_local_id(0);
-	int row = get_local_id(1);
+	int paddedWidth = width / 16;
+	int paddedHeight = height / 16;
 	
-	int source_corner_col = get_global_id(0) * K;					
-	int source_corner_row = get_global_id(1) * K;
-	int index = (row * K) + col;
-	int the_row = (source_corner_row + row);
-	int the_col = (source_corner_col + col);
+	int imageCol = get_global_id(0);
+	int imageRow = get_global_id(1);
+	int imageIndex = (imageRow * width) + imageCol;
 	
-	int source_index = (the_row * SIZE) + the_col;
-	tile[index] = source[source_index];
-	barrier(CLK_LOCAL_MEM_FENCE);
-	
-	if(the_row < height & the_col < width) {  
-		int value = tile[index];
-		local_histogram[value] ++;
+	int value = 0;
+	if(imageCol < image_width && imageRow < image_height) {
+		value = source[imageIndex];
 	}	
+	
+	int temp = local_histogram[value] + 1;
 	barrier(CLK_LOCAL_MEM_FENCE);
+	if(imageCol >= image_width && imageRow >= image_height) {
+		temp --;
+	}	
+	local_histogram[value] = temp;
+	barrier(CLK_LOCAL_MEM_FENCE);
+		
+	int tileCol = get_group_id(0);
+	int tileRow = get_group_id(1);
+	int tile_index = (tileRow * paddedWidth) + tileCol;
 	
-	int tile_index = get_group_id(0);
+	int local_col = get_local_id(0);
+	int local_row = get_local_id(1);
+	int i = (local_row * k) + local_row;
 	
-	result[(tile_index * 256) + index] = local_histogram[index];
+	result[(tile_index * 256) + i] = local_histogram[i];
 }
